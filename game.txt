@@ -1,0 +1,3277 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نبرد پادشاهان - نسخه کامل</title>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; padding: 0;
+            background-color: #2d1b15;
+            font-family: Tahoma, Arial, sans-serif;
+            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; color: white;
+            user-select: none; -webkit-user-select: none;
+        }
+        input, select, textarea { user-select: text; -webkit-user-select: text; }
+
+        .screen { width: 100%; max-width: 500px; height: 100vh; }
+
+        /* ===== نوار بالا ===== */
+        .topbar {
+            display: flex; gap: 4px; padding: 6px 8px;
+            justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.5); z-index: 100; flex-wrap: wrap;
+        }
+        .nav-btn {
+            background: #6d4c41; color: #fff; border: 1px solid #8d6e63;
+            padding: 5px 8px; border-radius: 6px;
+            font-family: inherit; font-size: 12px; cursor: pointer;
+        }
+        .nav-btn:active { transform: scale(0.94); }
+        .nav-btn.active { background: #ffb300; color: #000; border-color: #ffd54f; }
+        #editor-title { font-size: 13px; font-weight: bold; color: #ffb300; }
+
+        /* ================= صفحه بازی ================= */
+        #screen-game { display: flex; flex-direction: column; }
+
+        #game-board {
+            flex: 1; width: 100%;
+            display: flex; flex-direction: column; justify-content: space-evenly;
+            padding: 8px 10px; box-sizing: border-box;
+            background: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+            background-color: #4e342e; position: relative; overflow: hidden;
+        }
+        #game-board.shaking { animation: boardShake 0.35s ease-in-out; }
+        @keyframes boardShake {
+            0%,100% { transform: translate(0,0); }
+            20% { transform: translate(-5px, 2px); }
+            40% { transform: translate(5px, -2px); }
+            60% { transform: translate(-3px, -2px); }
+            80% { transform: translate(3px, 2px); }
+        }
+        .row {
+            display: flex; justify-content: center; gap: 8px;
+            padding: 2px 0; min-height: 92px; align-items: center; position: relative;
+        }
+        .enemy-row { border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .middle-line {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #ffb300, transparent);
+            margin: 4px 0;
+        }
+        .card-slot {
+            width: 65px; height: 85px;
+            background-color: rgba(0,0,0,0.4);
+            border: 2px dashed #6d4c41; border-radius: 8px;
+            display: flex; justify-content: center; align-items: center; position: relative;
+        }
+
+        /* ===== کارت ===== */
+        .card {
+            width: 60px; height: 80px; border-radius: 6px;
+            background-color: #d7ccc8; border: 2px solid #3e2723;
+            position: absolute;
+            display: flex; flex-direction: column;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, filter 0.3s, border-color 0.3s;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.6);
+            overflow: visible; z-index: 10;
+        }
+        .card.static { position: relative; transform: none !important; cursor: default; }
+
+        .card.can-attack {
+            border: 2px solid #ffb300;
+            box-shadow: 0 0 8px #ffb300, 0 0 15px rgba(255,179,0,0.5), 2px 2px 5px rgba(0,0,0,0.6);
+        }
+        .card.can-attack.selected {
+            border: 2px solid #ffd54f;
+            box-shadow: 0 0 15px #ffd54f, 0 0 30px #ffb300, 0 0 45px rgba(255,179,0,0.6);
+            transform: scale(1.1); z-index: 50;
+            animation: pulseGlow 1s ease-in-out infinite;
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 15px #ffd54f, 0 0 30px #ffb300; }
+            50% { box-shadow: 0 0 20px #ffd54f, 0 0 40px #ffb300, 0 0 60px rgba(255,179,0,0.8); }
+            100% { box-shadow: 0 0 15px #ffd54f, 0 0 30px #ffb300; }
+        }
+
+        .card.custom-card { border-color: var(--cb, #ffb300); }
+        .card.custom-card.can-attack {
+            border-color: var(--cb, #ffb300);
+            box-shadow: 0 0 8px var(--cb), 0 0 15px rgba(255,179,0,0.4), 2px 2px 5px rgba(0,0,0,0.6);
+        }
+        .card.custom-card.can-attack.selected {
+            border-color: var(--cb);
+            animation: pulseGlowCustom 1s ease-in-out infinite;
+            transform: scale(1.1); z-index: 50;
+        }
+        @keyframes pulseGlowCustom {
+            0% { box-shadow: 0 0 12px var(--cb), 0 0 25px var(--cb); }
+            50% { box-shadow: 0 0 20px var(--cb), 0 0 45px var(--cb); }
+            100% { box-shadow: 0 0 12px var(--cb), 0 0 25px var(--cb); }
+        }
+        .card.custom-card.tier-medium { border-width: 3px; }
+        .card.custom-card.tier-legendary::after, .card.custom-card.tier-god::after {
+            content: ''; position: absolute; inset: -5px; border-radius: 10px; pointer-events: none;
+        }
+        .card.custom-card.tier-legendary::after {
+            border: 1px solid var(--cb); box-shadow: 0 0 10px var(--cb);
+        }
+        .card.custom-card.tier-god { border-width: 3px; }
+        .card.custom-card.tier-god::after {
+            border: 2px solid var(--cb); animation: godRing 1.6s ease-in-out infinite;
+        }
+        @keyframes godRing {
+            0%,100% { box-shadow: 0 0 6px var(--cb); opacity: .85; }
+            50% { box-shadow: 0 0 18px var(--cb), 0 0 28px var(--cb); opacity: 1; }
+        }
+
+        .card.attacking { z-index: 999; pointer-events: none; }
+
+        .card-img {
+            width: 100%; height: 42px; background-color: #8d6e63;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 22px; color: #fff; position: relative; overflow: hidden;
+            border-radius: 4px 4px 0 0; flex-shrink: 0;
+        }
+        .card-image { width: 100%; height: 100%; object-fit: cover; }
+        .card-name {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            font-size: 8px; font-weight: bold; text-align: center; color: #fff;
+            text-shadow: 1px 1px 1px #000;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 4px 1px 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .snd-icon {
+            position: absolute; top: 1px; left: 2px; font-size: 8px;
+            z-index: 4; pointer-events: none;
+        }
+
+        .card-mid { flex: 1; position: relative; min-height: 0; width: 100%; }
+
+        .status-row {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            display: flex; justify-content: center; gap: 1px;
+            z-index: 3; pointer-events: none; flex-wrap: wrap;
+        }
+        .st-badge {
+            font-size: 7px; color: #fff; padding: 0 2px;
+            border-radius: 3px; line-height: 11px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        }
+
+        .hp-bar {
+            height: 4px; width: calc(100% - 6px); margin: 0 3px;
+            background: #263238; border-radius: 2px; overflow: hidden; flex-shrink: 0;
+        }
+        .hp-fill { height: 100%; background: #66bb6a; transition: width .3s, background .3s; }
+
+        .card-stats {
+            width: 100%; display: flex; justify-content: space-between;
+            padding: 0 3px 1px; font-size: 11px; font-weight: bold;
+            box-sizing: border-box; background: rgba(0,0,0,0.1); flex-shrink: 0;
+        }
+        .stat-attack { color: #b71c1c; }
+        .stat-health { color: #1b5e20; }
+
+        .card-type-badge {
+            font-size: 7px; color: #fff; padding: 1px 3px; border-radius: 3px;
+            position: absolute; top: 2px; right: 2px; background: #333; z-index: 3;
+        }
+        .type-attacker { background: #b71c1c; }
+        .type-defender { background: #1565c0; }
+        .type-mage { background: #6a1b9a; }
+        .type-king { background: #ffb300; color: #000; }
+        .type-spell { background: #2e7d32; }
+        .type-god { background: linear-gradient(45deg, #ffd700, #ff6ec7); color: #000; }
+
+        .king-badge {
+            background: #ffb300; color: #000; font-size: 8px; padding: 1px 4px;
+            border-radius: 3px; position: absolute; top: 2px; left: 2px; z-index: 3;
+        }
+        .frost {
+            position: absolute; inset: -2px; border-radius: 8px;
+            background: rgba(77,182,255,0.3); display: none;
+            align-items: center; justify-content: center;
+            font-size: 22px; z-index: 8; pointer-events: none;
+        }
+        .card.frozen { filter: saturate(0.4) brightness(1.15); }
+        .card.frozen .frost { display: flex; }
+
+        /* ===== افکت‌های ویژه جدید ===== */
+        .slash-fx {
+            position: absolute; width: 80px; height: 6px;
+            background: linear-gradient(90deg, transparent, #fff 40%, #ffd54f 60%, transparent);
+            border-radius: 3px; z-index: 998; pointer-events: none;
+            transform-origin: center;
+            animation: slashAnim 0.28s ease-out forwards;
+        }
+        @keyframes slashAnim {
+            0% { opacity: 0; transform: rotate(-40deg) scaleX(0.2); }
+            35% { opacity: 1; transform: rotate(-40deg) scaleX(1.1); }
+            100% { opacity: 0; transform: rotate(-40deg) scaleX(1.4); }
+        }
+        .impact-flash {
+            position: absolute; width: 60px; height: 60px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,241,118,0.95) 0%, rgba(255,179,0,0.5) 45%, transparent 70%);
+            z-index: 997; pointer-events: none;
+            animation: impactAnim 0.3s ease-out forwards;
+        }
+        @keyframes impactAnim {
+            0% { transform: scale(0.3); opacity: 1; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+        .shockwave {
+            position: absolute; width: 24px; height: 24px; border-radius: 50%;
+            border: 3px solid #ff7043; z-index: 998; pointer-events: none;
+            animation: shockwaveAnim 0.55s ease-out forwards;
+        }
+        .shockwave.gold { border-color: #ffd700; }
+        @keyframes shockwaveAnim {
+            0% { transform: scale(1); opacity: 0.9; }
+            100% { transform: scale(7); opacity: 0; }
+        }
+
+        /* ===== افکت‌های پایه ===== */
+        @keyframes hitShake {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-8px) rotate(-5deg); }
+            40% { transform: translateX(8px) rotate(5deg); }
+            60% { transform: translateX(-5px) rotate(-3deg); }
+            80% { transform: translateX(5px) rotate(3deg); }
+            100% { transform: translateX(0) rotate(0); }
+        }
+        .card.hit { animation: hitShake 0.4s ease-in-out; }
+        @keyframes deathFade {
+            0% { opacity: 1; transform: scale(1) rotate(0); filter: brightness(1); }
+            30% { filter: brightness(2.5) saturate(0.2); }
+            100% { opacity: 0; transform: scale(0.3) rotate(90deg); filter: brightness(0.3); }
+        }
+        .card.dying { animation: deathFade 0.55s forwards; }
+        @keyframes abilityFlash {
+            0%,100% { filter: brightness(1); }
+            50% { filter: brightness(1.9) drop-shadow(0 0 8px #ffd54f); }
+        }
+        .card.ability-flash { animation: abilityFlash 0.6s ease-in-out; }
+        @keyframes healFlash {
+            0%,100% { filter: brightness(1); }
+            50% { filter: brightness(1.4) drop-shadow(0 0 8px #69f0ae); }
+        }
+        .card.heal-flash { animation: healFlash 0.5s ease-in-out; }
+        @keyframes shieldFlash {
+            0%,100% { filter: brightness(1); }
+            50% { filter: brightness(1.3) drop-shadow(0 0 8px #4fc3f7); }
+        }
+        .card.shield-flash { animation: shieldFlash 0.5s ease-in-out; }
+        @keyframes reviveGlow {
+            0% { filter: brightness(3); transform: scale(0.4); }
+            100% { filter: brightness(1); transform: scale(1); }
+        }
+        .card.revive-glow { animation: reviveGlow 0.6s ease-out; }
+
+        .particle {
+            position: absolute; width: 8px; height: 8px; border-radius: 50%;
+            pointer-events: none; z-index: 1000;
+            animation: particleFly 0.6s ease-out forwards;
+        }
+        @keyframes particleFly {
+            0% { transform: translate(0,0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+        .damage-text {
+            position: absolute; color: #ff1744; font-weight: bold; font-size: 16px;
+            pointer-events: none; z-index: 1001; white-space: nowrap;
+            text-shadow: 1px 1px 2px #000, 0 0 5px #ff1744;
+            animation: floatUp 0.8s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-40px) scale(1.4); opacity: 0; }
+        }
+
+        #turn-indicator {
+            text-align: center; font-weight: bold; font-size: 13px; color: #ffb300;
+            padding: 4px; text-shadow: 1px 1px 2px #000;
+        }
+        #end-turn-btn {
+            background-color: #ffb300; color: #000; border: none;
+            padding: 8px 22px; border-radius: 5px; font-weight: bold; font-size: 14px;
+            cursor: pointer; margin: 4px auto 8px; display: block;
+            box-shadow: 0 4px 0 #b28200; font-family: inherit;
+        }
+        #end-turn-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #b28200; }
+
+        /* ===== لاگ ===== */
+        #log-panel {
+            position: fixed; bottom: 0; left: 0; right: 0; max-height: 45vh;
+            background: rgba(20,12,8,0.97); border-top: 2px solid #ffb300;
+            transform: translateY(100%); transition: transform .25s;
+            z-index: 2000; display: flex; flex-direction: column;
+        }
+        #log-panel.open { transform: none; }
+        #log-head {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; font-weight: bold; color: #ffb300; font-size: 13px;
+        }
+        #log-list { overflow-y: auto; padding: 0 12px 12px; font-size: 11px; line-height: 2; max-height: 34vh; }
+        .log-turn { color: #ffb300; font-weight: bold; }
+        .log-entry { border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        /* ===== اورلی‌ها ===== */
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+            display: none; align-items: center; justify-content: center; z-index: 3000;
+        }
+        .overlay-box {
+            background: #3e2723; border: 2px solid #ffb300; border-radius: 14px;
+            padding: 22px; text-align: center; max-width: 320px; width: 86%;
+            max-height: 80vh; overflow-y: auto;
+        }
+        #ov-title { font-size: 24px; font-weight: bold; margin-bottom: 6px; }
+        #ov-sub { font-size: 13px; color: #d7ccc8; margin-bottom: 12px; }
+        #ov-stats { font-size: 13px; line-height: 2; margin-bottom: 14px; color: #ffe0b2; }
+        .overlay-btn {
+            display: block; width: 100%; padding: 10px; margin-top: 8px;
+            border: none; border-radius: 8px; font-weight: bold; font-size: 14px;
+            cursor: pointer; font-family: inherit;
+        }
+        .ob-again { background: #ffb300; color: #000; }
+        .ob-editor { background: #5d4037; color: #fff; }
+        .ob-close { background: #6d4c41; color: #fff; }
+
+        .ci-head { font-size: 16px; font-weight: bold; color: #ffd54f; margin-bottom: 6px; }
+        .ci-stats { font-size: 13px; margin-bottom: 10px; color: #fff; }
+        .info-ab {
+            font-size: 11px; background: rgba(255,179,0,0.08); border: 1px solid #5d4037;
+            border-radius: 6px; padding: 6px; margin-top: 5px; text-align: right; line-height: 1.8;
+        }
+        #st-body { font-size: 14px; line-height: 2.4; text-align: right; }
+
+        #toast {
+            position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: #fff; padding: 8px 16px;
+            border-radius: 20px; font-size: 12px; z-index: 4000;
+            opacity: 0; transition: opacity .3s; pointer-events: none;
+            border: 1px solid #ffb300; max-width: 90%; text-align: center;
+        }
+        #toast.show { opacity: 1; }
+
+        /* ================= صفحه ادیتور ================= */
+        #screen-editor { display: none; height: 100vh; overflow: hidden; background: #2d1b15; }
+        #editor-scroll {
+            height: calc(100vh - 44px); overflow-y: auto;
+            touch-action: pan-y; -webkit-overflow-scrolling: touch;
+        }
+        #editor-hint {
+            text-align: center; font-size: 10px; color: #ffe082;
+            padding: 5px 10px; background: rgba(0,0,0,0.3); line-height: 1.7;
+        }
+        #place-banner {
+            display: none; background: #ffb300; color: #000; padding: 6px 10px;
+            border-radius: 8px; font-size: 11px; font-weight: bold;
+            margin: 6px 10px; text-align: center; cursor: pointer;
+        }
+        #editor-board {
+            background: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+            background-color: #4e342e; padding: 6px 10px;
+        }
+        #editor-board .card-slot { cursor: pointer; }
+        .side-label {
+            text-align: center; font-size: 9px; color: rgba(255,255,255,0.4);
+            padding: 1px 0; letter-spacing: 2px;
+        }
+
+        #editor-form { padding: 10px; }
+        .form-section {
+            background: rgba(0,0,0,0.35); border: 1px solid #5d4037;
+            border-radius: 10px; padding: 10px; margin-bottom: 12px;
+        }
+        .form-section h3 {
+            margin: 0 0 8px; font-size: 13px; color: #ffb300;
+            border-bottom: 1px solid #5d4037; padding-bottom: 5px;
+        }
+        .form-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+        .form-field { flex: 1; min-width: 100px; }
+        .form-field label { display: block; font-size: 11px; color: #bcaaa4; margin-bottom: 3px; }
+        .form-field input, .form-field select {
+            width: 100%; box-sizing: border-box; background: #3e2723; color: #fff;
+            border: 1px solid #6d4c41; border-radius: 5px; padding: 6px;
+            font-family: inherit; font-size: 13px;
+        }
+        input[type=color] { padding: 2px; height: 34px; }
+        input[type=file] { font-size: 10px; }
+        .small-btn {
+            width: 100%; background: #5d4037; color: #fff; border: 1px solid #6d4c41;
+            border-radius: 5px; padding: 7px; font-family: inherit; font-size: 12px; cursor: pointer;
+        }
+        .hint-small { font-size: 10px; color: #a1887f; margin: 4px 0; line-height: 1.8; }
+
+        .preview-box {
+            display: flex; justify-content: center; padding: 10px;
+            background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 8px;
+            min-height: 84px; align-items: center;
+        }
+
+        .color-swatches { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+        .swatch {
+            width: 26px; height: 26px; border-radius: 50%;
+            border: 2px solid #fff; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        /* ===== ردیف‌های صدا ===== */
+        .snd-row {
+            display: flex; align-items: center; gap: 5px;
+            background: rgba(0,0,0,0.25); border-radius: 8px;
+            padding: 6px; margin-bottom: 6px; flex-wrap: wrap;
+        }
+        .snd-label { font-size: 11px; color: #ffe0b2; min-width: 92px; font-weight: bold; }
+        .snd-row input[type=file] { flex: 1; min-width: 90px; font-size: 9px; }
+        .snd-mini {
+            background: #ffb300; color: #000; border: none; border-radius: 5px;
+            padding: 5px 8px; font-size: 11px; cursor: pointer; font-family: inherit;
+        }
+        .snd-mini.del { background: #b71c1c; color: #fff; }
+        .snd-status { font-size: 10px; color: #69f0ae; min-width: 45px; }
+
+        .ability-btn-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
+        .add-ability-btn {
+            background: #4e342e; color: #ffd54f; border: 1px dashed #ffb300;
+            border-radius: 6px; padding: 6px 8px; font-size: 11px;
+            font-family: inherit; cursor: pointer; margin: 2px;
+        }
+        .add-ability-btn:active { transform: scale(0.95); }
+
+        .ability-item {
+            background: rgba(255,179,0,0.06); border: 1px solid #6d4c41;
+            border-radius: 8px; padding: 8px; margin-top: 8px;
+        }
+        .ability-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .ability-label { font-size: 12px; font-weight: bold; color: #ffe082; }
+        .ability-del {
+            background: #b71c1c; color: white; border: none; border-radius: 4px;
+            padding: 3px 8px; cursor: pointer; font-size: 11px; font-family: inherit;
+        }
+        .ability-row {
+            display: flex; gap: 12px; align-items: center; margin-bottom: 6px;
+            flex-wrap: wrap; font-size: 11px; color: #d7ccc8;
+        }
+        .ability-row input, .ability-row select {
+            background: #3e2723; color: #fff; border: 1px solid #6d4c41;
+            border-radius: 4px; padding: 4px; width: 65px; font-family: inherit;
+        }
+        .auto-note {
+            font-size: 10px; color: #4fc3f7; background: rgba(79,195,247,0.08);
+            border-radius: 4px; padding: 4px 8px; margin-bottom: 6px;
+        }
+
+        .pv-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
+        .pv-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #4e342e; border: 1px solid #6d4c41; color: #d7ccc8;
+            border-radius: 16px; padding: 5px 9px; font-size: 11px;
+            margin: 2px; cursor: pointer; font-family: inherit;
+        }
+        .pv-chip.on { background: #ffb300; color: #000; border-color: #ffd54f; font-weight: bold; }
+        .pv-amt {
+            width: 42px; background: #3e2723; color: #fff; border: 1px solid #6d4c41;
+            border-radius: 4px; padding: 2px 4px; font-size: 11px; font-family: inherit;
+        }
+        .pv-desc { font-size: 10px; color: #a1887f; margin-top: 6px; line-height: 1.9; }
+
+        .pos-grid {
+            display: grid; grid-template-columns: repeat(3, 30px);
+            grid-auto-rows: 22px; gap: 3px; justify-content: center; margin-top: 4px;
+        }
+        .pos-cell { border-radius: 4px; border: 1px solid #5d4037; cursor: pointer; }
+        .pos-cell.enemy-side { background: rgba(183,28,28,0.3); }
+        .pos-cell.ally-side { background: rgba(46,125,50,0.3); }
+        .pos-cell.active { background: #ffb300 !important; border-color: #ffd54f; box-shadow: 0 0 5px #ffb300; }
+        .pos-sep { grid-column: 1 / -1; height: 4px; }
+        .pos-quick { display: flex; gap: 5px; margin-top: 8px; justify-content: center; flex-wrap: wrap; }
+        .pos-quick button {
+            font-size: 10px; padding: 4px 8px; border-radius: 4px;
+            border: 1px solid #6d4c41; background: #4e342e; color: #fff;
+            cursor: pointer; font-family: inherit;
+        }
+
+        .editor-action-btn {
+            width: 100%; padding: 10px; border: none; border-radius: 8px;
+            font-weight: bold; font-size: 14px; cursor: pointer;
+            font-family: inherit; margin-bottom: 8px;
+        }
+        #ed-test { background: #ffb300; color: #000; }
+        #ed-save { background: #2e7d32; color: #fff; }
+        #ed-new { background: #0277bd; color: #fff; }
+        #ed-row2 { display: flex; gap: 8px; }
+        #ed-row2 button { flex: 1; }
+
+        #import-area {
+            width: 100%; box-sizing: border-box; background: #26150f; color: #cfd8dc;
+            border: 1px solid #6d4c41; border-radius: 6px; font-size: 10px;
+            padding: 6px; height: 54px; font-family: monospace;
+            direction: ltr; text-align: left; margin-bottom: 6px;
+        }
+
+        #library-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .lib-empty { font-size: 11px; color: #8d6e63; width: 100%; text-align: center; padding: 8px; }
+        .lib-item {
+            background: rgba(0,0,0,0.3); border: 1px solid #6d4c41; border-radius: 8px;
+            padding: 6px; width: calc(33.33% - 6px); box-sizing: border-box; text-align: center;
+        }
+        .lib-thumb {
+            width: 40px; height: 40px; border-radius: 6px; border: 2px solid var(--cb, #ffb300);
+            background: #8d6e63; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; margin: 0 auto; overflow: hidden;
+        }
+        .lib-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .lib-name { font-size: 10px; margin: 4px 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lib-stats { font-size: 9px; color: #a1887f; margin-bottom: 4px; }
+        .lib-item button {
+            font-size: 9px; padding: 3px 5px; margin: 1px; border: none;
+            border-radius: 4px; cursor: pointer; font-family: inherit;
+        }
+        .lib-load { background: #ffb300; color: #000; }
+        .lib-place { background: #0277bd; color: #fff; }
+        .lib-dup { background: #5d4037; color: #fff; }
+        .lib-exp { background: #455a64; color: #fff; }
+        .lib-del { background: #b71c1c; color: #fff; }
+
+        #setups-list { display: flex; flex-direction: column; gap: 5px; }
+        .setup-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.25); border: 1px solid #5d4037;
+            border-radius: 6px; padding: 6px 10px; font-size: 12px;
+        }
+        .setup-item button {
+            font-size: 10px; padding: 3px 8px; margin-right: 4px;
+            border: none; border-radius: 4px; cursor: pointer; font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== صفحه بازی ==================== -->
+<div id="screen-game" class="screen">
+    <div class="topbar">
+        <button class="nav-btn" id="btn-open-editor">🛠️</button>
+        <button class="nav-btn" id="btn-restart">🔄</button>
+        <button class="nav-btn" id="btn-log">📜</button>
+        <button class="nav-btn" id="btn-sound">🔊</button>
+        <button class="nav-btn" id="btn-music">🎵</button>
+        <button class="nav-btn" id="btn-speed">⏩×1</button>
+        <button class="nav-btn" id="btn-inspect">ℹ️</button>
+        <button class="nav-btn" id="btn-stats">🏆</button>
+    </div>
+    <div id="game-board">
+        <div class="row enemy-row" id="enemy-row1"></div>
+        <div class="row enemy-row" id="enemy-row2"></div>
+        <div class="row enemy-row" id="enemy-row3"></div>
+        <div class="middle-line"></div>
+        <div id="turn-indicator">✅ نوبت 1: بازیکن</div>
+        <div class="row" id="player-row3"></div>
+        <div class="row" id="player-row2"></div>
+        <div class="row" id="player-row1"></div>
+        <button id="end-turn-btn">پایان نوبت</button>
+    </div>
+</div>
+
+<!-- ==================== صفحه ادیتور ==================== -->
+<div id="screen-editor" class="screen">
+    <div class="topbar">
+        <button class="nav-btn" id="btn-open-game">🎮 بازگشت</button>
+        <span id="editor-title">🛠️ ادیتور کارت</span>
+    </div>
+    <div id="editor-scroll">
+        <div id="editor-hint">👇 روی خانه‌ها بزنید تا کارت قرار بگیرد (کلیک دوباره = حذف). بالا = دشمن، پایین = خودی. تغییرات با «شروع دوباره» در بازی اعمال می‌شود</div>
+        <div id="place-banner">📍 در حال چیدمان: <span id="place-name"></span> — برای پایان بزنید ✋</div>
+
+        <div id="editor-board">
+            <div class="side-label">⚔️ سمت دشمن</div>
+            <div class="row enemy-row" data-erow="0"></div>
+            <div class="row enemy-row" data-erow="1"></div>
+            <div class="row enemy-row" data-erow="2"></div>
+            <div class="middle-line"></div>
+            <div class="side-label">🛡️ سمت شما</div>
+            <div class="row" data-erow="3"></div>
+            <div class="row" data-erow="4"></div>
+            <div class="row" data-erow="5"></div>
+        </div>
+
+        <div id="editor-form">
+            <!-- مشخصات -->
+            <div class="form-section">
+                <h3>📋 مشخصات کارت</h3>
+                <div class="preview-box" id="draft-preview"></div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>نام کارت</label>
+                        <input type="text" id="ed-name" value="قهرمان جدید" maxlength="20">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>نوع کارت</label>
+                        <select id="ed-type">
+                            <option value="attacker">تازشگر</option>
+                            <option value="defender">پاسدار</option>
+                            <option value="mage">افسونگر</option>
+                            <option value="king">پادشاه</option>
+                            <option value="spell">افسون (تک‌مصرف)</option>
+                            <option value="god">خدا (مصون)</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>مدل کارت</label>
+                        <select id="ed-tier">
+                            <option value="normal">عادی</option>
+                            <option value="medium">متوسط</option>
+                            <option value="legendary">افسانه‌ای 🌟</option>
+                            <option value="god">خدا ✨</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="hint-small">💡 پاسدار جلوی ردیف عقب را می‌گیرد | افسون در شروع اجرا و مصرف می‌شود | خدا مصون از نابودی، یخ، زهر، آتش، سکوت و کاهش است — و با انفجار طلایی می‌میرد!</div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>قدرت حمله ⚔️</label>
+                        <input type="number" id="ed-attack" value="10" min="0" max="99">
+                    </div>
+                    <div class="form-field">
+                        <label>مقدار جون ❤️</label>
+                        <input type="number" id="ed-health" value="20" min="1" max="99">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>ایموجی کارت</label>
+                        <input type="text" id="ed-icon" value="🧙" maxlength="4">
+                    </div>
+                    <div class="form-field">
+                        <label>رنگ دور کارت 🎨</label>
+                        <input type="color" id="ed-border" value="#ffb300">
+                    </div>
+                </div>
+                <div id="color-swatches" class="color-swatches"></div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>عکس کارت (اختیاری)</label>
+                        <input type="file" id="ed-image" accept="image/*">
+                    </div>
+                    <div class="form-field">
+                        <label>&nbsp;</label>
+                        <button id="ed-remove-image" class="small-btn">❌ حذف عکس</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🔊 صداهای کارت -->
+            <div class="form-section">
+                <h3>🔊 صداهای کارت</h3>
+                <div class="hint-small">فایل صوتی کوتاه انتخاب کنید (پیشنهاد: زیر ۳۰۰ کیلوبایت). صدای مرگ هنگام نابودی کارت، صدای حمله هنگام ضربه زدن و صدای شروع در ابتدای نبرد پخش می‌شود</div>
+                <div class="snd-row">
+                    <span class="snd-label">🌟 صدای شروع:</span>
+                    <input type="file" id="ed-snd-start" accept="audio/*">
+                    <button class="snd-mini" data-snd="start" data-act="play">▶️</button>
+                    <button class="snd-mini del" data-snd="start" data-act="del">🗑</button>
+                    <span class="snd-status" id="snd-status-start">—</span>
+                </div>
+                <div class="snd-row">
+                    <span class="snd-label">⚔️ صدای حمله:</span>
+                    <input type="file" id="ed-snd-attack" accept="audio/*">
+                    <button class="snd-mini" data-snd="attack" data-act="play">▶️</button>
+                    <button class="snd-mini del" data-snd="attack" data-act="del">🗑</button>
+                    <span class="snd-status" id="snd-status-attack">—</span>
+                </div>
+                <div class="snd-row">
+                    <span class="snd-label">💀 صدای مرگ:</span>
+                    <input type="file" id="ed-snd-death" accept="audio/*">
+                    <button class="snd-mini" data-snd="death" data-act="play">▶️</button>
+                    <button class="snd-mini del" data-snd="death" data-act="del">🗑</button>
+                    <span class="snd-status" id="snd-status-death">—</span>
+                </div>
+            </div>
+
+            <!-- 🔥 پسیو -->
+            <div class="form-section">
+                <h3>🔥 قابلیت‌های پسیو (همیشگی)</h3>
+                <div class="pv-wrap" id="passive-list"></div>
+                <div class="pv-desc" id="pv-desc"></div>
+            </div>
+
+            <!-- فازها -->
+            <div class="form-section">
+                <h3>🌟 قابلیت‌ها در شروع بازی</h3>
+                <div class="ability-btn-wrap" id="add-btns-onStart"></div>
+                <div id="list-onStart"></div>
+            </div>
+            <div class="form-section">
+                <h3>🔄 قابلیت‌ها در شروع هر نوبت</h3>
+                <div class="hint-small">در شروع نوبتِ صاحب کارت اجرا می‌شود</div>
+                <div class="ability-btn-wrap" id="add-btns-onTurnStart"></div>
+                <div id="list-onTurnStart"></div>
+            </div>
+            <div class="form-section">
+                <h3>⚔️ قابلیت‌ها هنگام حمله</h3>
+                <div class="hint-small">وقتی این کارت حمله می‌کند اجرا می‌شود</div>
+                <div class="ability-btn-wrap" id="add-btns-onAttack"></div>
+                <div id="list-onAttack"></div>
+            </div>
+            <div class="form-section">
+                <h3>🛡️ قابلیت‌ها هنگام دفاع (تحت حمله)</h3>
+                <div class="hint-small">وقتی این کارت ضربه می‌خورد اجرا می‌شود</div>
+                <div class="ability-btn-wrap" id="add-btns-onDefend"></div>
+                <div id="list-onDefend"></div>
+            </div>
+            <div class="form-section">
+                <h3>🎯 قابلیت‌ها هنگام کشتن (On Kill)</h3>
+                <div class="hint-small">وقتی این کارت کارت دشمنی را نابود می‌کند اجرا می‌شود</div>
+                <div class="ability-btn-wrap" id="add-btns-onKill"></div>
+                <div id="list-onKill"></div>
+            </div>
+            <div class="form-section">
+                <h3>💀 قابلیت‌ها بعد از مرگ کارت</h3>
+                <div class="ability-btn-wrap" id="add-btns-onDeath"></div>
+                <div id="list-onDeath"></div>
+            </div>
+
+            <button id="ed-test" class="editor-action-btn">▶️ شروع بازی با این چیدمان</button>
+            <button id="ed-save" class="editor-action-btn">💾 ذخیره کارت (اگر قبلاً ذخیره شده، به‌روزرسانی می‌شود)</button>
+            <button id="ed-new" class="editor-action-btn">🆕 کارت جدید</button>
+            <div id="ed-row2">
+                <button id="ed-reset-default" class="editor-action-btn" style="background:#5d4037;color:#fff;">🔄 چیدمان پیش‌فرض</button>
+                <button id="ed-clear-board" class="editor-action-btn" style="background:#5d4037;color:#fff;">🧹 صفحه خالی</button>
+            </div>
+
+            <!-- چیدمان‌ها -->
+            <div class="form-section">
+                <h3>🗂 چیدمان‌های نبرد</h3>
+                <div class="form-row">
+                    <div class="form-field">
+                        <input type="text" id="setup-name" placeholder="نام چیدمان..." maxlength="25">
+                    </div>
+                    <div class="form-field" style="flex:0 0 110px;">
+                        <button id="setup-save" class="small-btn">💾 ذخیره کل صفحه</button>
+                    </div>
+                </div>
+                <div id="setups-list"></div>
+            </div>
+
+            <!-- کتابخانه -->
+            <div class="form-section">
+                <h3>📚 کتابخانه کارت‌ها</h3>
+                <div id="library-list"></div>
+                <h3 style="margin-top:12px;">📤 تبادل کارت با کد</h3>
+                <textarea id="import-area" placeholder="کد کارت اینجا..."></textarea>
+                <button id="ed-import" class="small-btn">📥 وارد کردن کارت از کد</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== اورلی‌ها ===== -->
+<div class="overlay" id="overlay">
+    <div class="overlay-box">
+        <div id="ov-title"></div>
+        <div id="ov-sub"></div>
+        <div id="ov-stats"></div>
+        <button class="overlay-btn ob-again" id="ov-again">🔄 بازی دوباره</button>
+        <button class="overlay-btn ob-editor" id="ov-editor">🛠️ رفتن به ادیتور</button>
+    </div>
+</div>
+<div class="overlay" id="card-info-overlay">
+    <div class="overlay-box">
+        <div id="ci-body"></div>
+        <button class="overlay-btn ob-close" id="ci-close">بستن</button>
+    </div>
+</div>
+<div class="overlay" id="stats-overlay">
+    <div class="overlay-box">
+        <div class="ci-head">🏆 آمار نبردها</div>
+        <div id="st-body"></div>
+        <button class="overlay-btn ob-close" id="st-close">بستن</button>
+    </div>
+</div>
+<div class="overlay" id="music-overlay">
+    <div class="overlay-box">
+        <div class="ci-head">🎵 موسیقی پس‌زمینه</div>
+        <div id="mu-status" style="font-size:12px;color:#d7ccc8;margin-bottom:10px;"></div>
+        <button class="overlay-btn" id="mu-toggle" style="background:#2e7d32;color:#fff;">▶️ / ⏸ پخش و توقف</button>
+        <div style="margin:10px 0;font-size:12px;color:#ffe0b2;">🔊 ولوم موسیقی:
+            <input type="range" id="mu-vol" min="0" max="100" value="35" style="width:100%;">
+        </div>
+        <div style="font-size:11px;color:#a1887f;margin-bottom:4px;">🎵 آهنگ دلخواه خودتان (فقط در همین نشست پخش می‌شود):</div>
+        <input type="file" id="mu-file" accept="audio/*" style="font-size:10px;margin-bottom:6px;width:100%;">
+        <button class="overlay-btn" id="mu-custom-stop" style="background:#5d4037;color:#fff;">❌ توقف آهنگ دلخواه و برگشت به موسیقی بازی</button>
+        <button class="overlay-btn ob-close" id="mu-close">بستن</button>
+    </div>
+</div>
+<div id="log-panel">
+    <div id="log-head"><span>📜 لاگ نبرد</span><button class="nav-btn" id="log-close">✕</button></div>
+    <div id="log-list"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+    // ================= ابزارهای پایه =================
+    const $ = (id) => document.getElementById(id);
+    const deepCopy = (o) => JSON.parse(JSON.stringify(o));
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    let SPEED = 1;
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms / SPEED));
+
+    function loadLS(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+    function saveLS(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch(e) { return false; } }
+
+    // ================= تعریف‌ها =================
+    const TYPE_LABELS = {
+        king: 'پادشاه', mage: 'افسونگر', attacker: 'تازشگر',
+        defender: 'پاسدار', both: 'هر دو', spell: 'افسون', god: 'خدا'
+    };
+
+    const CARD_DATA = {
+        'king':       { name: 'پادشاه',      type: 'king',     attack: 5,  health: 30, icon: '🤴' },
+        'mage_blue':  { name: 'پیرمرد آبی',  type: 'mage',     attack: 6,  health: 18, icon: '🧙‍♂️' },
+        'mage_green': { name: 'پیرمرد سبز',  type: 'mage',     attack: 4,  health: 20, icon: '🧝‍♂️' },
+        'viking':     { name: 'وایکینگ',     type: 'defender', attack: 12, health: 30, icon: '🛡️' },
+        'kootoole':   { name: 'کوتوله',      type: 'attacker', attack: 18, health: 15, icon: '🔨' },
+        'shovalieh':  { name: 'شوالیه',      type: 'both',     attack: 14, health: 22, icon: '⚔️' },
+        'troll':      { name: 'ترول',        type: 'defender', attack: 15, health: 35, icon: '🧟' },
+        'orc':        { name: 'اورک',        type: 'attacker', attack: 20, health: 12, icon: '🪓' },
+        'goblin':     { name: 'گابلین',      type: 'attacker', attack: 10, health: 10, icon: '👺' }
+    };
+
+    const DEFAULT_LAYOUT_ROWS = [
+        [0,0,'mage_blue'],[0,1,'king'],[0,2,'mage_green'],
+        [1,0,'viking'],[1,1,'kootoole'],[1,2,'shovalieh'],
+        [2,0,'troll'],[2,1,'orc'],[2,2,'goblin'],
+        [3,0,'troll'],[3,1,'orc'],[3,2,'goblin'],
+        [4,0,'viking'],[4,1,'kootoole'],[4,2,'shovalieh'],
+        [5,0,'mage_blue'],[5,1,'king'],[5,2,'mage_green'],
+    ];
+
+    const KNOWN_ACTIONS = ['destroyMage','destroyDefender','destroyAttacker','heal','damage','thorns',
+        'buffAttack','nerfAttack','freeze','counterAttack','shield','poison','lifesteal','taunt','dodge',
+        'execute','silence','burn','maxHpUp','maxHpDown','stealAttack','drain','splash','cleanse','dispel','summon','healFull'];
+
+    const ACTION_META = {
+        destroyMage:     { unit: 'تعداد' },
+        destroyDefender: { unit: 'تعداد' },
+        destroyAttacker: { unit: 'تعداد' },
+        heal:            { unit: 'جون' },
+        damage:          { unit: 'آسیب' },
+        thorns:          { unit: 'آسیب' },
+        buffAttack:      { unit: 'قدرت' },
+        nerfAttack:      { unit: 'قدرت' },
+        freeze:          { unit: 'تعداد' },
+        counterAttack:   { unit: 'آسیب', auto: true },
+        shield:          { unit: 'جذب' },
+        poison:          { unit: 'آسیب/نوبت' },
+        lifesteal:       { unit: 'جون', auto: true },
+        taunt:           { noAmount: true },
+        dodge:           { unit: 'درصد %' },
+        execute:         { unit: 'جان یا کمتر' },
+        silence:         { unit: 'تعداد' },
+        burn:            { unit: 'آسیب/نوبت' },
+        maxHpUp:         { unit: 'جون بیشینه' },
+        maxHpDown:       { unit: 'جون' },
+        stealAttack:     { unit: 'قدرت' },
+        drain:           { unit: 'آسیب' },
+        splash:          { unit: 'آسیب' },
+        cleanse:         { noAmount: true },
+        dispel:          { noAmount: true },
+        summon:          { unit: 'قدرت/جون' },
+        healFull:        { noAmount: true },
+    };
+    const DEFAULT_AMOUNTS = { destroyMage:1, destroyDefender:1, destroyAttacker:1, heal:3, damage:3,
+        thorns:3, buffAttack:2, nerfAttack:2, freeze:1, counterAttack:8, shield:5, poison:2, lifesteal:4,
+        taunt:1, dodge:30, execute:5, silence:1, burn:2, maxHpUp:5, maxHpDown:3, stealAttack:3, drain:4,
+        splash:4, cleanse:1, dispel:1, summon:3, healFull:1 };
+    const DEFAULT_SIDE = { heal:'ally', shield:'ally', taunt:'ally', dodge:'ally', buffAttack:'ally', thorns:'ally',
+        cleanse:'ally', healFull:'ally', maxHpUp:'ally', summon:'ally',
+        dispel:'enemy', stealAttack:'enemy', maxHpDown:'enemy', burn:'enemy', silence:'enemy',
+        execute:'enemy', splash:'enemy', drain:'enemy' };
+
+    const ABILITY_DEFS = {
+        onStart: [
+            { action:'destroyMage',     label:'نابودی افسونگر',  icon:'💀' },
+            { action:'destroyDefender', label:'نابودی پاسدار',   icon:'💀' },
+            { action:'destroyAttacker', label:'نابودی تازشگر',   icon:'💀' },
+            { action:'heal',            label:'بالا بردن جون',    icon:'❤️' },
+            { action:'damage',          label:'ضربه زدن',         icon:'⚔️' },
+            { action:'thorns',          label:'خار (ضد ضربه)',    icon:'🌵' },
+            { action:'buffAttack',      label:'بالا بردن قدرت',   icon:'⬆️' },
+            { action:'nerfAttack',      label:'پایین آوردن قدرت', icon:'⬇️' },
+            { action:'freeze',          label:'یخ زدن دشمن',      icon:'❄️' },
+            { action:'shield',          label:'سپر (جذب ضربه)',   icon:'🛡️' },
+            { action:'poison',          label:'زهر آلود کردن',    icon:'☠️' },
+            { action:'taunt',           label:'تحریک',            icon:'🎯' },
+            { action:'dodge',           label:'جاخالی',           icon:'💨' },
+            { action:'execute',         label:'اعدام کم‌جان‌ها',   icon:'🪦' },
+            { action:'silence',         label:'سکوت (قطع قابلیت)', icon:'🔇' },
+            { action:'burn',            label:'آتش زدن',           icon:'🔥' },
+            { action:'maxHpUp',         label:'افزون جان',         icon:'💖' },
+            { action:'maxHpDown',       label:'تضعیف جان',         icon:'🩹' },
+            { action:'stealAttack',     label:'دزدی قدرت',         icon:'🥷' },
+            { action:'drain',           label:'مکیدن',             icon:'🧛' },
+            { action:'splash',          label:'موج گسترده',        icon:'🌊' },
+            { action:'cleanse',         label:'پاکسازی خودی‌ها',   icon:'🧼' },
+            { action:'dispel',          label:'زدودن جادوی دشمن',  icon:'🌪' },
+            { action:'summon',          label:'احضار روح',         icon:'👻' },
+            { action:'healFull',        label:'شفای کامل',         icon:'✨' },
+        ],
+        onTurnStart: [
+            { action:'heal',       label:'بازسازی جون',    icon:'❤️' },
+            { action:'damage',     label:'ضربه زدن',        icon:'⚔️' },
+            { action:'thorns',     label:'خار',             icon:'🌵' },
+            { action:'buffAttack', label:'قدرت بیشتر',      icon:'⬆️' },
+            { action:'nerfAttack', label:'کاهش قدرت دشمن',  icon:'⬇️' },
+            { action:'freeze',     label:'یخ زدن',          icon:'❄️' },
+            { action:'shield',     label:'سپر',             icon:'🛡️' },
+            { action:'poison',     label:'زهر',             icon:'☠️' },
+            { action:'taunt',      label:'تحریک',           icon:'🎯' },
+            { action:'dodge',      label:'جاخالی',          icon:'💨' },
+            { action:'burn',       label:'آتش زدن',         icon:'🔥' },
+            { action:'stealAttack',label:'دزدی قدرت',       icon:'🥷' },
+            { action:'cleanse',    label:'پاکسازی خودی‌ها', icon:'🧼' },
+            { action:'dispel',     label:'زدودن جادو',      icon:'🌪' },
+            { action:'summon',     label:'احضار روح',       icon:'👻' },
+            { action:'healFull',   label:'شفای کامل',       icon:'✨' },
+            { action:'maxHpUp',    label:'افزون جان',       icon:'💖' },
+        ],
+        onAttack: [
+            { action:'lifesteal',  label:'جون‌خواری (خودش)', icon:'🩸' },
+            { action:'heal',       label:'بالا بردن جون',    icon:'❤️' },
+            { action:'damage',     label:'ضربه زدن',          icon:'⚔️' },
+            { action:'thorns',     label:'خار',               icon:'🌵' },
+            { action:'buffAttack', label:'قدرت بیشتر',        icon:'⬆️' },
+            { action:'freeze',     label:'یخ زدن',            icon:'❄️' },
+            { action:'poison',     label:'زهر آلود کردن',     icon:'☠️' },
+            { action:'shield',     label:'سپر',               icon:'🛡️' },
+            { action:'execute',    label:'اعدام کم‌جان‌ها',    icon:'🪦' },
+            { action:'silence',    label:'سکوت',              icon:'🔇' },
+            { action:'burn',       label:'آتش زدن',           icon:'🔥' },
+            { action:'drain',      label:'مکیدن',             icon:'🧛' },
+            { action:'splash',     label:'موج گسترده',        icon:'🌊' },
+            { action:'stealAttack',label:'دزدی قدرت',         icon:'🥷' },
+            { action:'maxHpDown',  label:'تضعیف جان',         icon:'🩹' },
+            { action:'dispel',     label:'زدودن جادو',        icon:'🌪' },
+        ],
+        onDefend: [
+            { action:'counterAttack', label:'حمله متقابل به حمله‌کننده', icon:'🗡️' },
+            { action:'damage',        label:'ضربه انتقامی به کارت دیگر',  icon:'⚔️' },
+            { action:'heal',          label:'بالا بردن جون',               icon:'❤️' },
+            { action:'buffAttack',    label:'قدرت بیشتر',                  icon:'⬆️' },
+            { action:'nerfAttack',    label:'کاهش قدرت',                   icon:'⬇️' },
+            { action:'freeze',        label:'یخ زدن',                      icon:'❄️' },
+            { action:'poison',        label:'زهر آلود کردن',               icon:'☠️' },
+            { action:'shield',        label:'سپر',                         icon:'🛡️' },
+            { action:'thorns',        label:'خار',                         icon:'🌵' },
+            { action:'dodge',         label:'جاخالی',                      icon:'💨' },
+            { action:'taunt',         label:'تحریک',                       icon:'🎯' },
+            { action:'silence',       label:'سکوت حمله‌کننده',             icon:'🔇' },
+            { action:'burn',          label:'آتش زدن حمله‌کننده',          icon:'🔥' },
+            { action:'dispel',        label:'زدودن جادو',                  icon:'🌪' },
+            { action:'cleanse',       label:'پاکسازی خودی‌ها',             icon:'🧼' },
+            { action:'healFull',      label:'شفای کامل',                   icon:'✨' },
+            { action:'maxHpDown',     label:'تضعیف جان',                   icon:'🩹' },
+        ],
+        onKill: [
+            { action:'lifesteal',  label:'جون‌خواری (خودش)', icon:'🩸' },
+            { action:'heal',       label:'بالا بردن جون',    icon:'❤️' },
+            { action:'buffAttack', label:'قدرت بیشتر',        icon:'⬆️' },
+            { action:'damage',     label:'ضربه زدن',           icon:'⚔️' },
+            { action:'shield',     label:'سپر',                icon:'🛡️' },
+            { action:'thorns',     label:'خار',                icon:'🌵' },
+        ],
+        onDeath: [
+            { action:'heal',       label:'بالا بردن جون',   icon:'❤️' },
+            { action:'damage',     label:'ضربه زدن',         icon:'⚔️' },
+            { action:'thorns',     label:'پاتک به قاتل',     icon:'🌵' },
+            { action:'buffAttack', label:'قدرت به خودی‌ها',  icon:'⬆️' },
+            { action:'poison',     label:'زهر آلود کردن',    icon:'☠️' },
+            { action:'freeze',     label:'یخ زدن',           icon:'❄️' },
+            { action:'shield',     label:'سپر به خودی‌ها',   icon:'🛡️' },
+            { action:'burn',       label:'آتش زدن',          icon:'🔥' },
+            { action:'silence',    label:'سکوت',             icon:'🔇' },
+            { action:'summon',     label:'احضار روح',        icon:'👻' },
+            { action:'dispel',     label:'زدودن جادو',       icon:'🌪' },
+            { action:'maxHpDown',  label:'تضعیف جان',        icon:'🩹' },
+        ]
+    };
+
+    const PHASE_LABELS = {
+        onStart: '🌟 شروع بازی', onTurnStart: '🔄 شروع هر نوبت',
+        onAttack: '⚔️ هنگام حمله', onDefend: '🛡️ هنگام دفاع',
+        onKill: '🎯 هنگام کشتن', onDeath: '💀 بعد از مرگ'
+    };
+
+    const PASSIVE_DEFS = [
+        { key:'doubleStrike', icon:'🗡️', label:'حمله دوگانه', desc:'در هر حمله دو بار ضربه می‌زند' },
+        { key:'cleave', icon:'🪓', label:'برش جانبی', desc:'کارت‌های چپ و راستِ هدف، نصفِ آسیب را می‌گیرند' },
+        { key:'crit', icon:'💥', label:'ضربه بحرانی', desc:'با شانس مشخص، آسیب دوبرابر می‌شود', hasAmount:true, unit:'%', def:30 },
+        { key:'resurrect', icon:'👼', label:'رستاخیز', desc:'یک بار بعد از مرگ، با درصدی از جون برمی‌گردد', hasAmount:true, unit:'% جون', def:50 },
+        { key:'lastStand', icon:'💪', label:'جان سخت', desc:'اولین ضربه مرگبار را با ۱ جون زنده می‌ماند' },
+        { key:'regen', icon:'💚', label:'بازسازی', desc:'شروع هر نوبتِ صاحبش، این مقدار جون شفا می‌یابد', hasAmount:true, unit:'جون', def:2 },
+        { key:'berserk', icon:'😤', label:'خشم', desc:'هر بار ضربه بخورد، این مقدار قدرت می‌گیرد', hasAmount:true, unit:'قدرت', def:2 },
+        { key:'rage', icon:'🔥', label:'خشم پیوسته', desc:'شروع هر نوبتِ صاحبش، این مقدار قدرت می‌گیرد', hasAmount:true, unit:'قدرت', def:1 },
+        { key:'pierce', icon:'⚡', label:'شکافنده', desc:'سپر دشمن را نادیده می‌گیرد' },
+        { key:'ignoreGuard', icon:'🏹', label:'تک‌تیرانداز', desc:'محافظت پاسدارها و تحریک را نادیده می‌گیرد' },
+        { key:'stealth', icon:'👻', label:'نامرئی', desc:'تا وقتی کارت دیگری از سمتش زنده است، قابل هدف نیست' },
+    ];
+
+    const PRESET_COLORS = ['#3e2723','#ffb300','#b71c1c','#1565c0','#2e7d32','#6a1b9a','#ffd700','#ff6ec7','#00e5ff','#00c853','#ff6d00','#ffffff'];
+    const ROW_IDS = ['enemy-row1','enemy-row2','enemy-row3','player-row3','player-row2','player-row1'];
+
+    // ================= وضعیت کلی =================
+    let currentTurn = 'player';
+    let selectedCard = null;
+    let busy = false;
+    let gameOver = false;
+    let inspectMode = false;
+    let turnCount = 1;
+    let battleSeq = 0;
+    let gameStartTime = 0;
+    let layoutDirty = false;
+    let winTimer = null;
+    let pendingOnKills = [];
+
+    let board = Array.from({length:6}, () => Array(3).fill(null));
+    let battleLogArr = [];
+
+    let stats = loadLS('nabard_stats_v2', { wins: 0, losses: 0, played: 0, damage: 0 });
+    let soundOn = loadLS('nabard_sound_v2', true);
+    let customCards = loadLS('nabard_custom_cards_v2', []);
+    let setups = loadLS('nabard_setups_v2', []);
+
+    let editorLayout = makeDefaultLayout();
+    let editorCard = defaultDraft();
+    let placingDef = null;
+
+    function makeDefaultLayout() {
+        const L = Array.from({length:6}, () => Array(3).fill(null));
+        DEFAULT_LAYOUT_ROWS.forEach(([r,c,id]) => L[r][c] = { kind:'default', id });
+        return L;
+    }
+    function defaultEntry(r, c) {
+        const f = DEFAULT_LAYOUT_ROWS.find(p => p[0] === r && p[1] === c);
+        return f ? { kind:'default', id: f[2] } : null;
+    }
+    function defaultPassives() {
+        return { doubleStrike:false, cleave:false, crit:0, resurrect:0, lastStand:false,
+                 regen:0, berserk:0, rage:0, pierce:false, ignoreGuard:false, stealth:false };
+    }
+    function defaultSounds() { return { start: null, attack: null, death: null }; }
+    function defaultDraft() {
+        return { id: null, name: 'قهرمان جدید', type: 'attacker', tier: 'normal',
+                 attack: 10, health: 20, icon: '🧙', image: null, borderColor: '#ffb300',
+                 sounds: defaultSounds(),
+                 passives: defaultPassives(),
+                 abilities: { onStart:[], onTurnStart:[], onAttack:[], onDefend:[], onKill:[], onDeath:[] } };
+    }
+
+    // ================= صدا (افکت‌ها) =================
+    const SFX = {
+        ctx: null,
+        ensure() {
+            if (!this.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) this.ctx = new AC(); }
+            if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+            return this.ctx;
+        },
+        tone(f, d, type = 'sine', vol = 0.13, slide) {
+            const c = this.ensure(); if (!c) return;
+            const o = c.createOscillator(), g = c.createGain();
+            o.type = type; o.frequency.setValueAtTime(f, c.currentTime);
+            if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, slide), c.currentTime + d);
+            g.gain.setValueAtTime(vol, c.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d);
+            o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + d);
+        },
+        noise(d = 0.15, vol = 0.15) {
+            const c = this.ensure(); if (!c) return;
+            const b = c.createBuffer(1, c.sampleRate * d, c.sampleRate);
+            const data = b.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+            const s = c.createBufferSource(); s.buffer = b;
+            const g = c.createGain(); g.gain.value = vol;
+            const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
+            s.connect(f).connect(g).connect(c.destination); s.start();
+        },
+        play(name) {
+            if (!soundOn) return;
+            try {
+                switch (name) {
+                    case 'select':  this.tone(600, .07, 'square', .07); break;
+                    case 'attack':  this.noise(.18, .16); this.tone(220, .2, 'sawtooth', .09, 80); break;
+                    case 'slash':   this.noise(.09, .11); this.tone(1000, .08, 'sawtooth', .05, 250); break;
+                    case 'hit':     this.tone(120, .16, 'square', .16, 60); this.noise(.09, .1); break;
+                    case 'death':   this.tone(400, .5, 'sawtooth', .13, 50); this.noise(.3, .12); break;
+                    case 'ability': this.tone(700, .1, 'sine', .1); setTimeout(() => this.tone(1050, .14, 'sine', .1), 90); break;
+                    case 'heal':    this.tone(520, .14, 'sine', .09); setTimeout(() => this.tone(780, .18, 'sine', .09), 110); break;
+                    case 'freeze':  this.tone(1400, .3, 'sine', .07, 900); break;
+                    case 'buff':    this.tone(400, .1, 'triangle', .1); setTimeout(() => this.tone(620, .12, 'triangle', .1), 80); break;
+                    case 'thorns':  this.tone(300, .12, 'square', .1, 150); break;
+                    case 'shield':  this.tone(500, .12, 'triangle', .1); setTimeout(() => this.tone(750, .14, 'triangle', .09), 90); break;
+                    case 'poison':  this.tone(180, .25, 'sawtooth', .08, 90); break;
+                    case 'dodge':   this.tone(900, .12, 'sine', .08, 300); break;
+                    case 'taunt':   this.tone(300, .1, 'square', .1); setTimeout(() => this.tone(300, .15, 'square', .1), 140); break;
+                    case 'crit':    this.tone(200, .1, 'square', .14); setTimeout(() => this.tone(800, .18, 'square', .12, 1200), 80); break;
+                    case 'revive':  [392,523,659,784].forEach((f,i) => setTimeout(() => this.tone(f, .2, 'sine', .1), i * 110)); break;
+                    case 'summon':  this.tone(500, .2, 'sine', .1, 1000); break;
+                    case 'steal':   this.tone(800, .1, 'sawtooth', .08, 300); setTimeout(() => this.tone(400, .12, 'sawtooth', .08, 800), 100); break;
+                    case 'victory': [523,659,784,1046].forEach((f,i) => setTimeout(() => this.tone(f, .25, 'triangle', .13), i * 140)); break;
+                    case 'defeat':  [440,349,293,220].forEach((f,i) => setTimeout(() => this.tone(f, .3, 'sawtooth', .09), i * 180)); break;
+                }
+            } catch(e) {}
+        }
+    };
+
+    // صدای شخصی کارت
+    function playCardSound(el, kind) {
+        if (!soundOn || !el) return;
+        const key = 'sound' + kind.charAt(0).toUpperCase() + kind.slice(1);
+        const src = el.dataset[key];
+        if (!src) return;
+        try {
+            const a = new Audio(src);
+            a.volume = 0.85;
+            a.play().catch(()=>{});
+        } catch(e) {}
+    }
+
+    // ================= 🎵 موسیقی پس‌زمینه =================
+    const Music = {
+        timer: null,
+        bar: 0,
+        master: null,
+        customAudio: null,
+        musicOn: loadLS('nabard_music_v1', true),
+        volume: loadLS('nabard_music_vol_v1', 35),
+
+        ensureMaster() {
+            const c = SFX.ensure();
+            if (!c) return null;
+            if (!this.master) {
+                this.master = c.createGain();
+                this.master.connect(c.destination);
+            }
+            this.master.gain.value = this.volume / 100;
+            return this.master;
+        },
+        isPlaying() {
+            if (this.customAudio) return !this.customAudio.paused;
+            return !!this.timer;
+        },
+        start() {
+            if (!this.musicOn) return;
+            if (this.customAudio) { this.customAudio.play().catch(()=>{}); return; }
+            if (this.timer) return;
+            if (!this.ensureMaster()) return;
+            this.timer = setInterval(() => this.playBar(), 2400);
+            this.playBar();
+        },
+        stop() {
+            if (this.customAudio) this.customAudio.pause();
+            clearInterval(this.timer);
+            this.timer = null;
+        },
+        setVolume(v) {
+            this.volume = v;
+            saveLS('nabard_music_vol_v1', v);
+            if (this.customAudio) this.customAudio.volume = v / 100;
+            if (this.master) this.master.gain.value = v / 100;
+        },
+        useCustom(file) {
+            try {
+                if (this.customAudio) this.customAudio.pause();
+                this.customAudio = new Audio(URL.createObjectURL(file));
+                this.customAudio.loop = true;
+                this.customAudio.volume = this.volume / 100;
+                clearInterval(this.timer); this.timer = null;
+                this.customAudio.play().catch(()=>{});
+            } catch(e) { toast('⚠️ پخش این فایل ممکن نشد'); }
+        },
+        clearCustom() {
+            if (this.customAudio) this.customAudio.pause();
+            this.customAudio = null;
+            this.start();
+        },
+
+        // --- سازهای موسیقی حماسی ---
+        kick(t) {
+            const c = SFX.ctx, out = this.master;
+            const o = c.createOscillator(), g = c.createGain();
+            o.type = 'sine';
+            o.frequency.setValueAtTime(120, t);
+            o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+            g.gain.setValueAtTime(0.45, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+            o.connect(g); g.connect(out);
+            o.start(t); o.stop(t + 0.25);
+        },
+        snare(t) {
+            const c = SFX.ctx, out = this.master;
+            const b = c.createBuffer(1, Math.floor(c.sampleRate * 0.15), c.sampleRate);
+            const d = b.getChannelData(0);
+            for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 2);
+            const s = c.createBufferSource(); s.buffer = b;
+            const f = c.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1200;
+            const g = c.createGain(); g.gain.value = 0.13;
+            s.connect(f); f.connect(g); g.connect(out);
+            s.start(t);
+        },
+        hat(t) {
+            const c = SFX.ctx, out = this.master;
+            const b = c.createBuffer(1, Math.floor(c.sampleRate * 0.05), c.sampleRate);
+            const d = b.getChannelData(0);
+            for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
+            const s = c.createBufferSource(); s.buffer = b;
+            const f = c.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 6000;
+            const g = c.createGain(); g.gain.value = 0.05;
+            s.connect(f); f.connect(g); g.connect(out);
+            s.start(t);
+        },
+        bassNote(freq, t) {
+            const c = SFX.ctx, out = this.master;
+            const o = c.createOscillator(), g = c.createGain();
+            o.type = 'triangle'; o.frequency.value = freq;
+            g.gain.setValueAtTime(0.001, t);
+            g.gain.linearRampToValueAtTime(0.2, t + 0.03);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
+            o.connect(g); g.connect(out);
+            o.start(t); o.stop(t + 1.05);
+        },
+        pad(freqs, t, dur) {
+            const c = SFX.ctx, out = this.master;
+            freqs.forEach(f => {
+                const o = c.createOscillator(), g = c.createGain();
+                const flt = c.createBiquadFilter();
+                o.type = 'sawtooth'; o.frequency.value = f;
+                flt.type = 'lowpass'; flt.frequency.value = 850;
+                g.gain.setValueAtTime(0.001, t);
+                g.gain.linearRampToValueAtTime(0.045, t + 0.4);
+                g.gain.linearRampToValueAtTime(0.001, t + dur);
+                o.connect(flt); flt.connect(g); g.connect(out);
+                o.start(t); o.stop(t + dur + 0.05);
+            });
+        },
+        lead(freq, t) {
+            const c = SFX.ctx, out = this.master;
+            const o = c.createOscillator(), g = c.createGain();
+            o.type = 'square'; o.frequency.value = freq;
+            g.gain.setValueAtTime(0.001, t);
+            g.gain.linearRampToValueAtTime(0.06, t + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+            o.connect(g); g.connect(out);
+            o.start(t); o.stop(t + 0.55);
+        },
+        playBar() {
+            const c = SFX.ctx;
+            if (!c || !this.master) return;
+            const t = c.currentTime + 0.05;
+            const bar = this.bar % 8;
+            // پیشروی آکورد: Am - F - G - Em (حس حماسی)
+            const prog = [
+                [110.0, 130.8, 164.8],
+                [87.3, 110.0, 130.8],
+                [98.0, 123.5, 146.8],
+                [82.4, 98.0, 123.5],
+            ];
+            const chord = prog[Math.floor(bar / 2)];
+            // درام‌ها
+            this.kick(t); this.kick(t + 0.6);
+            this.snare(t + 1.2); this.snare(t + 1.8);
+            if (bar % 2 === 1) { this.hat(t + 0.3); this.hat(t + 0.9); this.hat(t + 1.5); }
+            // بیس
+            this.bassNote(chord[0] / 2, t);
+            this.bassNote(chord[0] / 2, t + 1.2);
+            // پد آکوردی
+            this.pad(chord, t, 2.3);
+            // ملودی در نیمه دوم
+            if (bar >= 4) {
+                const scale = [440, 523.3, 587.3, 659.3, 784];
+                const idx = (this.bar * 3) % scale.length;
+                this.lead(scale[idx], t + 0.6);
+                this.lead(scale[(idx + 2) % scale.length], t + 1.5);
+            }
+            this.bar++;
+        }
+    };
+
+    // ================= UI کمکی =================
+    let toastTimer;
+    function toast(msg) {
+        const t = $('toast'); t.textContent = msg; t.classList.add('show');
+        clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+    }
+    function logAdd(text, cls) {
+        battleLogArr.unshift({ t: turnCount, text, cls });
+        if (battleLogArr.length > 90) battleLogArr.pop();
+        renderLog();
+    }
+    function renderLog() {
+        $('log-list').innerHTML = battleLogArr.map(e =>
+            `<div class="log-entry ${e.cls||''}"><span class="log-turn">[نوبت ${e.t}]</span> ${esc(e.text)}</div>`).join('');
+    }
+    function showFloat(target, text, color) {
+        if (!target || !target.isConnected) return;
+        const rect = target.getBoundingClientRect();
+        const boardRect = $('game-board').getBoundingClientRect();
+        if (!rect.width) return;
+        const el = document.createElement('div');
+        el.className = 'damage-text'; el.innerText = text; el.style.color = color;
+        el.style.left = (rect.left - boardRect.left + rect.width/2 - 20) + 'px';
+        el.style.top = (rect.top - boardRect.top) + 'px';
+        $('game-board').appendChild(el);
+        setTimeout(() => el.remove(), 800);
+    }
+    function spawnParticles(target, count = 8, colors) {
+        if (!target || !target.isConnected) return;
+        const rect = target.getBoundingClientRect();
+        const boardRect = $('game-board').getBoundingClientRect();
+        if (!rect.width) return;
+        const cx = rect.left - boardRect.left + rect.width/2;
+        const cy = rect.top - boardRect.top + rect.height/2;
+        const cols = colors || ['#ff1744','#ffb300','#ff5722','#fff'];
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.backgroundColor = cols[Math.floor(Math.random()*cols.length)];
+            p.style.left = cx + 'px'; p.style.top = cy + 'px';
+            const a = (Math.PI*2*i)/count + Math.random()*0.5;
+            const d = 40 + Math.random()*30;
+            p.style.setProperty('--tx', Math.cos(a)*d + 'px');
+            p.style.setProperty('--ty', Math.sin(a)*d + 'px');
+            $('game-board').appendChild(p);
+            setTimeout(() => p.remove(), 700);
+        }
+    }
+    function flashCard(el, cls) {
+        if (!el || !el.isConnected) return;
+        const c = cls || 'ability-flash';
+        el.classList.add(c);
+        setTimeout(() => el.classList.remove(c), 600);
+    }
+    const isAlive = (el) => el && el.isConnected && el.dataset.dead !== '1';
+
+    // ================= افکت‌های ویژه =================
+    function centerOf(el) {
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width/2, y: r.top + r.height/2 };
+    }
+    function fxDrop(cls, x, y, life, extraCls) {
+        const br = $('game-board').getBoundingClientRect();
+        const el = document.createElement('div');
+        el.className = cls + (extraCls ? ' ' + extraCls : '');
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        $('game-board').appendChild(el);
+        setTimeout(() => el.remove(), life);
+    }
+    function screenShake() {
+        const b = $('game-board');
+        if (b.classList.contains('shaking')) return;
+        b.classList.add('shaking');
+        setTimeout(() => b.classList.remove('shaking'), 380);
+    }
+    // افکت حمله: برش نورانی + فلاش ضربه + لرزش
+    function attackImpactFX(target, dmg) {
+        if (!target || !target.isConnected) return;
+        const c = centerOf(target);
+        const br = $('game-board').getBoundingClientRect();
+        fxDrop('slash-fx', c.x - br.left - 40, c.y - br.top - 3, 400);
+        fxDrop('impact-flash', c.x - br.left - 30, c.y - br.top - 30, 400);
+        SFX.play('slash');
+        if (dmg >= 12) screenShake();
+    }
+    // افکت مرگ: موج انفجاری + ذرات آتشین + جمجمه + لرزش
+    function deathEffectFX(card) {
+        const c = centerOf(card);
+        const br = $('game-board').getBoundingClientRect();
+        const isGod = card.dataset.tier === 'god';
+        fxDrop('shockwave', c.x - br.left - 12, c.y - br.top - 12, 700, isGod ? 'gold' : '');
+        if (isGod) setTimeout(() => {
+            fxDrop('shockwave', c.x - br.left - 12, c.y - br.top - 12, 700, 'gold');
+        }, 150);
+        fxDrop('impact-flash', c.x - br.left - 30, c.y - br.top - 30, 500);
+        spawnParticles(card, isGod ? 18 : 13, ['#ff1744','#ff6d00','#ffb300','#fff','#ff5722']);
+        showFloat(card, '💀', '#ff5252');
+        screenShake();
+    }
+
+    // ================= ساخت المان کارت =================
+    function countAbilitiesOf(el) {
+        try {
+            const ab = JSON.parse(el.dataset.abilities || '{}');
+            return Object.values(ab).reduce((n, a) => n + (Array.isArray(a) ? a.length : 0), 0);
+        } catch(e) { return 0; }
+    }
+    function updateStatus(el) {
+        const row = el.querySelector('.status-row');
+        if (!row) return;
+        const items = [];
+        const abN = countAbilitiesOf(el);
+        if (abN) items.push(['⚡' + abN, '#1565c0']);
+        const sh = +el.dataset.shield || 0; if (sh > 0) items.push(['🛡️' + sh, '#0277bd']);
+        const th = +el.dataset.thorns || 0; if (th > 0) items.push(['🌵' + th, '#2e7d32']);
+        const po = +el.dataset.poison || 0; if (po > 0) items.push(['☠️' + po, '#4a148c']);
+        const bu = +el.dataset.burn || 0;   if (bu > 0) items.push(['🔥' + bu, '#bf360c']);
+        const dd = +el.dataset.dodge || 0;  if (dd > 0) items.push(['💨' + dd + '%', '#455a64']);
+        if (el.dataset.taunt === '1') items.push(['🎯', '#b71c1c']);
+        if (el.dataset.silenced === '1') items.push(['🔇', '#37474f']);
+        if (el.dataset.doubleStrike === '1') items.push(['🗡️', '#5d4037']);
+        if (el.dataset.cleave === '1') items.push(['🪓', '#4e342e']);
+        const cr = +el.dataset.crit || 0; if (cr > 0) items.push(['💥' + cr, '#e65100']);
+        if (el.dataset.pierce === '1') items.push(['⚡', '#f9a825']);
+        if (el.dataset.ignoreGuard === '1') items.push(['🏹', '#33691e']);
+        if (el.dataset.stealth === '1') items.push(['👻', '#546e7a']);
+        if (el.dataset.lastStand === '1' && el.dataset.lastStandUsed !== '1') items.push(['💪', '#00695c']);
+        const rs = +el.dataset.resurrect || 0;
+        if (rs > 0 && el.dataset.resurrectUsed !== '1') items.push(['👼' + rs + '%', '#6a1b9a']);
+        row.innerHTML = items.map(([txt, bg]) => `<span class="st-badge" style="background:${bg}">${txt}</span>`).join('');
+    }
+    function updateHP(el) {
+        const hp = Math.max(0, parseInt(el.dataset.health) || 0);
+        const mx = parseInt(el.dataset.maxHealth) || 1;
+        const s = el.querySelector('.stat-health'); if (s) s.innerText = '❤️' + hp;
+        const f = el.querySelector('.hp-fill');
+        if (f) {
+            const p = clamp(hp/mx*100, 0, 100);
+            f.style.width = p + '%';
+            f.style.background = p > 50 ? '#66bb6a' : p > 25 ? '#ffb300' : '#e53935';
+        }
+    }
+    function updateAtk(el) {
+        const a = parseInt(el.dataset.attack) || 0;
+        const s = el.querySelector('.stat-attack'); if (s) s.innerText = '⚔️' + a;
+    }
+
+    function makeCardEl(opts, isPlayer, isCustom) {
+        const el = document.createElement('div');
+        el.className = 'card' + (isCustom ? ' custom-card tier-' + (opts.tier || 'normal') : '');
+        el.dataset.isPlayer = String(isPlayer);
+        el.dataset.health = opts.health;
+        el.dataset.maxHealth = opts.health;
+        el.dataset.attack = opts.attack;
+        el.dataset.type = opts.type;
+        el.dataset.name = opts.name || 'کارت';
+        el.dataset.hasAttacked = 'false';
+        el.dataset.thorns = '0';
+        el.dataset.shield = '0';
+        el.dataset.poison = '0';
+        el.dataset.burn = '0';
+        el.dataset.dodge = '0';
+        el.dataset.taunt = '0';
+        el.dataset.silenced = '0';
+        el.dataset.frozen = '0';
+        el.dataset.dead = '0';
+        el.dataset.lastStandUsed = '0';
+        el.dataset.resurrectUsed = '0';
+        if (isCustom) {
+            el.dataset.tier = opts.tier || 'normal';
+            el.dataset.abilities = JSON.stringify(opts.abilities || {onStart:[],onTurnStart:[],onAttack:[],onDefend:[],onKill:[],onDeath:[]});
+            el.style.setProperty('--cb', opts.borderColor || '#ffb300');
+            const P = opts.passives || defaultPassives();
+            el.dataset.crit = P.crit || 0;
+            el.dataset.regen = P.regen || 0;
+            el.dataset.berserk = P.berserk || 0;
+            el.dataset.rage = P.rage || 0;
+            el.dataset.resurrect = P.resurrect || 0;
+            ['doubleStrike','cleave','lastStand','pierce','ignoreGuard','stealth'].forEach(k => {
+                if (P[k]) el.dataset[k] = '1';
+            });
+            // صداهای شخصی
+            const S = opts.sounds || defaultSounds();
+            if (S.start) el.dataset.soundStart = S.start;
+            if (S.attack) el.dataset.soundAttack = S.attack;
+            if (S.death) el.dataset.soundDeath = S.death;
+        } else {
+            el.dataset.cardId = opts.id || '';
+            el.dataset.abilities = '{}';
+        }
+
+        const img = opts.image ? `<img src="${opts.image}" class="card-image" alt="">` : (opts.icon || '❓');
+        const hasSnd = !!(el.dataset.soundStart || el.dataset.soundAttack || el.dataset.soundDeath);
+        el.innerHTML = `
+            <div class="card-img">${img}${isCustom ? `<div class="card-name">${esc(opts.name||'')}</div>` : ''}${hasSnd ? '<div class="snd-icon">🔊</div>' : ''}</div>
+            <div class="card-mid">
+                ${opts.type === 'king' ? '<div class="king-badge">👑</div>' : ''}
+                <div class="card-type-badge type-${opts.type}">${TYPE_LABELS[opts.type]||''}</div>
+                <div class="status-row"></div>
+            </div>
+            <div class="frost">❄️</div>
+            <div class="hp-bar"><div class="hp-fill" style="width:100%"></div></div>
+            <div class="card-stats">
+                <span class="stat-attack">⚔️${opts.attack}</span>
+                <span class="stat-health">❤️${opts.health}</span>
+            </div>`;
+        updateStatus(el);
+        if (isPlayer && opts.type !== 'spell') el.classList.add('can-attack');
+        return el;
+    }
+
+    // ================= ساخت صفحه بازی =================
+    function ensureSlots(row) {
+        const re = $(ROW_IDS[row]);
+        if (re.children.length === 0) {
+            for (let i = 0; i < 3; i++) {
+                const s = document.createElement('div');
+                s.className = 'card-slot'; s.dataset.row = row; s.dataset.col = i;
+                re.appendChild(s);
+            }
+        }
+        return re;
+    }
+    function putInSlot(r, c, el) {
+        const re = ensureSlots(r);
+        re.children[c].innerHTML = '';
+        re.children[c].appendChild(el);
+        board[r][c] = el;
+    }
+    function countSideNonSpell(isP) {
+        let n = 0;
+        for (let r = isP?3:0; r < (isP?6:3); r++)
+            for (let c = 0; c < 3; c++) {
+                const e = editorLayout[r][c];
+                if (e && !(e.kind === 'custom' && e.data.type === 'spell')) n++;
+            }
+        return n;
+    }
+    function ensureSidesPopulated() {
+        [[false,0],[true,3]].forEach(([isP, r0]) => {
+            if (countSideNonSpell(isP) === 0) {
+                logAdd(isP ? '⚡ سمت شما خالی بود؛ چیدمان پیش‌فرض چیده شد' : '⚡ سمت دشمن خالی بود؛ چیدمان پیش‌فرض چیده شد', 'log-turn');
+                for (let r = r0; r < r0+3; r++)
+                    for (let c = 0; c < 3; c++)
+                        editorLayout[r][c] = defaultEntry(r, c);
+            }
+        });
+    }
+    function buildGameBoard() {
+        board = Array.from({length:6}, () => Array(3).fill(null));
+        ROW_IDS.forEach(id => $(id).innerHTML = '');
+        ensureSidesPopulated();
+        for (let r = 0; r < 6; r++) for (let c = 0; c < 3; c++) {
+            const e = editorLayout[r][c];
+            if (!e) continue;
+            const isP = r >= 3;
+            let el;
+            if (e.kind === 'default') {
+                const d = CARD_DATA[e.id];
+                el = makeCardEl({...d, id: e.id}, isP, false);
+            } else if (e.kind === 'draft') {
+                el = makeCardEl(deepCopy(editorCard), isP, true);
+            } else {
+                el = makeCardEl(deepCopy(e.data), isP, true);
+            }
+            el.addEventListener('click', (ev) => onCardClick(ev, el));
+            putInSlot(r, c, el);
+        }
+        layoutDirty = false;
+    }
+    function cardAt(r, c) {
+        const el = board[r] && board[r][c];
+        return isAlive(el) ? el : null;
+    }
+
+    // ================= کلیک روی کارت =================
+    function sideHasOtherAlive(el) {
+        const isP = el.dataset.isPlayer === 'true';
+        const r0 = isP ? 3 : 0;
+        let n = 0;
+        for (let r = r0; r < r0+3; r++) for (let c = 0; c < 3; c++) {
+            const o = cardAt(r, c);
+            if (o && o !== el) n++;
+        }
+        return n > 0;
+    }
+    function tauntBlocks(target, attacker) {
+        if (attacker && attacker.dataset.ignoreGuard === '1') return false;
+        const isPT = target.dataset.isPlayer === 'true';
+        const r0 = isPT ? 3 : 0;
+        const taunts = [];
+        for (let r = r0; r < r0+3; r++) for (let c = 0; c < 3; c++) {
+            const el = cardAt(r, c);
+            if (el && el.dataset.taunt === '1') taunts.push(el);
+        }
+        if (!taunts.length || target.dataset.taunt === '1') return false;
+        return taunts.some(t => {
+            const r = +t.parentElement.dataset.row, c = +t.parentElement.dataset.col;
+            const g = protectedBy(r, c);
+            return !(g && (g.dataset.type === 'defender' || g.dataset.type === 'both'));
+        });
+    }
+    function onCardClick(e, el) {
+        e.stopPropagation();
+        if (inspectMode) { showCardInfo(el); return; }
+        if (currentTurn !== 'player' || busy || gameOver) return;
+        const isP = el.dataset.isPlayer === 'true';
+        if (isP) {
+            if (el.dataset.dead === '1') return;
+            if (el.dataset.type === 'spell') { showFloat(el, '📜 افسون قابل انتخاب نیست', '#ffd54f'); return; }
+            if (el.dataset.frozen === '1') { showFloat(el, '❄️ یخ زده!', '#4fc3f7'); return; }
+            if (el.dataset.hasAttacked === 'true') { showFloat(el, '⏳ قبلاً حمله کرده', '#ff5252'); clearSelection(); return; }
+            if (selectedCard === el) { clearSelection(); return; }
+            clearSelection();
+            selectedCard = el; el.classList.add('selected');
+            SFX.play('select');
+            return;
+        }
+        if (el.dataset.dead === '1') return;
+        if (!selectedCard) return;
+        const attacker = selectedCard;
+        if (el.dataset.stealth === '1' && sideHasOtherAlive(el)) {
+            showFloat(el, '👻 قابل هدف نیست!', '#90a4ae'); return;
+        }
+        if (attacker.dataset.ignoreGuard !== '1') {
+            const tR = +el.parentElement.dataset.row, tC = +el.parentElement.dataset.col;
+            const guardRow = tR === 0 ? 1 : tR === 1 ? 2 : -1;
+            if (guardRow !== -1) {
+                const g = cardAt(guardRow, tC);
+                if (g && (g.dataset.type === 'defender' || g.dataset.type === 'both')) {
+                    showFloat(el, '🛡️ محفوظ!', '#2196f3'); SFX.play('thorns'); clearSelection(); return;
+                }
+            }
+            if (tauntBlocks(el, attacker)) { showFloat(el, '🎯 اول کارت تحریک‌شده!', '#ff8a80'); SFX.play('taunt'); return; }
+        }
+        tryPlayerAttack(attacker, el);
+    }
+    function clearSelection() {
+        if (selectedCard) { selectedCard.classList.remove('selected'); selectedCard = null; }
+    }
+
+    // ================= حمله =================
+    async function tryPlayerAttack(attacker, target) {
+        if (busy || gameOver) return;
+        busy = true; clearSelection();
+        await performAttack(attacker, target);
+        busy = false;
+    }
+
+    async function performAttack(attacker, target) {
+        const s = battleSeq;
+        attacker.dataset.hasAttacked = 'true';
+        attacker.classList.remove('can-attack', 'selected');
+        const aR = attacker.getBoundingClientRect(), tR = target.getBoundingClientRect();
+        const dx = tR.left - aR.left, dy = tR.top - aR.top;
+        const up = attacker.dataset.isPlayer === 'true';
+        attacker.classList.add('attacking'); attacker.style.zIndex = '999';
+        SFX.play('attack');
+        attacker.style.transition = 'transform .26s ease-out';
+        attacker.style.transform = `translate(${dx*0.4}px,${dy*0.4}px) scale(1.15) rotate(${up?'-8':'8'}deg)`;
+        await sleep(260);
+        if (s !== battleSeq) { resetAnim(attacker); return; }
+        attacker.style.transition = 'transform .3s ease-in';
+        attacker.style.transform = `translate(${dx}px,${dy}px) scale(1.25) rotate(${up?'12':'-12'}deg)`;
+        await sleep(300);
+        if (s !== battleSeq) { resetAnim(attacker); return; }
+
+        const targetSideP = target.dataset.isPlayer === 'true';
+
+        // 💨 جاخالی
+        const dodge = +target.dataset.dodge || 0;
+        if (dodge > 0 && Math.random() * 100 < dodge) {
+            showFloat(target, '💨 جاخالی!', '#b0bec5');
+            SFX.play('dodge');
+            logAdd(`💨 ${target.dataset.name} حمله ${attacker.dataset.name} را جاخالی داد`);
+            await sleep(300);
+        } else {
+            // 💥 بحرانی
+            let dmg = parseInt(attacker.dataset.attack) || 0;
+            const critP = +attacker.dataset.crit || 0;
+            if (critP > 0 && Math.random() * 100 < critP) {
+                dmg *= 2;
+                showFloat(attacker, '💥 بحرانی!', '#ffd54f');
+                SFX.play('crit');
+                logAdd(`💥 ${attacker.dataset.name} ضربه بحرانی زد!`);
+                await sleep(250);
+                if (s !== battleSeq) { resetAnim(attacker); return; }
+            }
+            // 🔊 صدای حمله شخصی + افکت برش و فلاش
+            playCardSound(attacker, 'attack');
+            attackImpactFX(target, dmg);
+            const dealt = dealDamage(target, dmg, attacker);
+            logAdd(`⚔️ ${attacker.dataset.name} به ${target.dataset.name} ${dealt} آسیب زد`);
+            if (attacker.dataset.isPlayer === 'true' && dealt > 0) { stats.damage += dealt; saveLS('nabard_stats_v2', stats); }
+            await sleep(120);
+
+            // 🪓 برش جانبی
+            if (attacker.dataset.cleave === '1' && s === battleSeq) {
+                const tr = +target.parentElement.dataset.row, tc = +target.parentElement.dataset.col;
+                [tc-1, tc+1].forEach(nc => {
+                    if (nc < 0 || nc > 2) return;
+                    const nb = cardAt(tr, nc);
+                    if (nb) {
+                        const half = Math.floor(dmg / 2);
+                        if (half > 0) { showFloat(nb, '🪓', '#ff7043'); dealDamage(nb, half, attacker); }
+                    }
+                });
+            }
+
+            // 🛡️ فاز دفاع هدف
+            if (isAlive(target)) await runPhase(target, 'onDefend', { attacker }, s);
+
+            // 🌵 خار پسیو هدف
+            if (isAlive(target)) {
+                const th = +target.dataset.thorns || 0;
+                if (th > 0) {
+                    showFloat(target, '🌵 پاتک', '#4fc3f7');
+                    SFX.play('thorns');
+                    await sleep(200);
+                    if (s !== battleSeq) { resetAnim(attacker); return; }
+                    dealDamage(attacker, th, target);
+                    logAdd(`🌵 خارِ ${target.dataset.name}: ${th} آسیب به ${attacker.dataset.name}`);
+                }
+            }
+            // فاز حمله مهاجم
+            if (isAlive(attacker)) await runPhase(attacker, 'onAttack', null, s);
+
+            // 🗡️ حمله دوگانه
+            if (isAlive(attacker) && attacker.dataset.doubleStrike === '1' && s === battleSeq) {
+                await sleep(250);
+                if (s !== battleSeq) { resetAnim(attacker); return; }
+                let t2 = isAlive(target) ? target : randomEnemyOfSide(targetSideP);
+                if (t2) {
+                    showFloat(attacker, '🗡️ ضربه دوم!', '#ff8a80');
+                    await sleep(200);
+                    if (s !== battleSeq) { resetAnim(attacker); return; }
+                    playCardSound(attacker, 'attack');
+                    attackImpactFX(t2, parseInt(attacker.dataset.attack) || 0);
+                    const d2 = dealDamage(t2, parseInt(attacker.dataset.attack) || 0, attacker);
+                    logAdd(`🗡️ حمله دوگانه ${attacker.dataset.name}: ${d2} آسیب به ${t2.dataset.name}`);
+                    if (isAlive(t2)) await runPhase(t2, 'onDefend', { attacker }, s);
+                }
+            }
+        }
+        if (s !== battleSeq) { resetAnim(attacker); return; }
+        await flushOnKills(s);
+        if (s !== battleSeq) { resetAnim(attacker); return; }
+
+        // برگشت
+        if (isAlive(attacker)) {
+            attacker.style.transition = 'transform .35s ease-in-out';
+            attacker.style.transform = 'translate(0,0) scale(1) rotate(0)';
+            await sleep(380);
+        }
+        resetAnim(attacker);
+    }
+    function resetAnim(el) {
+        if (!el || !el.isConnected) return;
+        el.classList.remove('attacking');
+        el.style.zIndex = ''; el.style.transition = ''; el.style.transform = '';
+    }
+    function randomEnemyOfSide(sideIsPlayer) {
+        const list = [];
+        for (let r = sideIsPlayer?3:0; r < (sideIsPlayer?6:3); r++)
+            for (let c = 0; c < 3; c++) { const el = cardAt(r,c); if (el) list.push(el); }
+        return list.length ? list[Math.floor(Math.random()*list.length)] : null;
+    }
+
+    // ================= آسیب / مرگ =================
+    function dealDamage(target, amount, source) {
+        if (!isAlive(target)) return 0;
+        let dmg = Math.max(0, parseInt(amount) || 0);
+        if (dmg <= 0) return 0;
+        const pierce = source && source.dataset && source.dataset.pierce === '1';
+        // 🛡️ سپر
+        let sh = +target.dataset.shield || 0;
+        if (sh > 0 && !pierce) {
+            const absorbed = Math.min(sh, dmg);
+            sh -= absorbed; dmg -= absorbed;
+            target.dataset.shield = String(sh);
+            showFloat(target, `🛡️ ${absorbed} جذب شد`, '#4fc3f7');
+            flashCard(target, 'shield-flash');
+            SFX.play('shield');
+            updateStatus(target);
+            if (dmg <= 0) return absorbed;
+        } else if (sh > 0 && pierce) {
+            showFloat(target, '⚡ سپر شکست!', '#f9a825');
+        }
+        let hp = (parseInt(target.dataset.health) || 0) - dmg;
+        // 💪 جان سخت
+        if (hp <= 0 && target.dataset.lastStand === '1' && target.dataset.lastStandUsed !== '1') {
+            target.dataset.lastStandUsed = '1';
+            hp = 1;
+            showFloat(target, '💪 جان سخت!', '#4db6ac');
+            SFX.play('revive');
+            logAdd(`💪 ${target.dataset.name} با جان سخت زنده ماند!`);
+            updateStatus(target);
+        }
+        // 👼 رستاخیز
+        if (hp <= 0 && +target.dataset.resurrect > 0 && target.dataset.resurrectUsed !== '1') {
+            target.dataset.resurrectUsed = '1';
+            const rsP = +target.dataset.resurrect;
+            hp = Math.max(1, Math.ceil((+target.dataset.maxHealth) * rsP / 100));
+            showFloat(target, '👼 رستاخیز!', '#ce93d8');
+            SFX.play('revive');
+            target.classList.add('revive-glow');
+            setTimeout(() => target.classList.remove('revive-glow'), 700);
+            logAdd(`👼 ${target.dataset.name} با رستاخیز زنده شد (${hp} جون)!`);
+            updateStatus(target);
+        }
+        target.dataset.health = String(hp);
+        updateHP(target);
+        target.classList.add('hit');
+        setTimeout(() => target.classList.remove('hit'), 400);
+        spawnParticles(target);
+        showFloat(target, '-' + dmg, '#ff1744');
+        SFX.play('hit');
+        // 😤 خشم
+        const bk = +target.dataset.berserk || 0;
+        if (bk > 0 && hp > 0) {
+            target.dataset.attack = String((+target.dataset.attack) + bk);
+            updateAtk(target);
+            showFloat(target, `😤 +${bk} ⚔️`, '#ff8a80');
+        }
+        if (hp <= 0) killCard(target, source);
+        return dmg;
+    }
+    function killCard(card, killer) {
+        if (!isAlive(card)) return;
+        card.dataset.dead = '1';
+        const r = +card.parentElement.dataset.row, c = +card.parentElement.dataset.col;
+        if (board[r]) board[r][c] = null;
+        card.classList.add('dying');
+        // 🔊 صدای مرگ شخصی یا پیش‌فرض
+        if (card.dataset.soundDeath) playCardSound(card, 'death');
+        else SFX.play('death');
+        // 💥 افکت مرگ سینمایی
+        deathEffectFX(card);
+        logAdd(`💀 ${card.dataset.name} نابود شد`);
+        setTimeout(() => { if (card.isConnected) card.remove(); }, 560);
+        if (isAlive(killer)) pendingOnKills.push({ killer, victim: card });
+        if (card.dataset.type !== 'spell') triggerDeath(card, killer);
+        scheduleWinCheck();
+    }
+    async function flushOnKills(s) {
+        let guard = 0;
+        while (pendingOnKills.length && guard < 10) {
+            guard++;
+            const k = pendingOnKills.shift();
+            if (s !== battleSeq) { pendingOnKills = []; return; }
+            if (!isAlive(k.killer)) continue;
+            logAdd(`🎯 ${k.killer.dataset.name} کارت کشت!`);
+            await runPhase(k.killer, 'onKill', { victim: k.victim }, s);
+        }
+        if (guard >= 10) pendingOnKills = [];
+    }
+    async function triggerDeath(card, killer) {
+        const s = battleSeq;
+        if (card.dataset.silenced === '1') {
+            logAdd(`🔇 ${card.dataset.name} ساکت بود؛ قابلیت مرگ اجرا نشد`);
+            return;
+        }
+        let ab; try { ab = JSON.parse(card.dataset.abilities || '{}'); } catch(e) { return; }
+        for (const a of (ab.onDeath || [])) {
+            if (s !== battleSeq) return;
+            await sleep(300);
+            if (s !== battleSeq) return;
+            logAdd(`☠️ ${card.dataset.name} (بعد از مرگ): ${a.icon} ${a.label}`);
+            await runAbility(card, a, { killer }, s);
+        }
+        if (s === battleSeq) await flushOnKills(s);
+    }
+
+    // ================= اجرای قابلیت‌ها =================
+    async function runPhase(card, phase, ctx, seq) {
+        const s = seq ?? battleSeq;
+        if (card.dataset.silenced === '1') {
+            showFloat(card, '🔇 ساکت!', '#90a4ae');
+            return;
+        }
+        let ab; try { ab = JSON.parse(card.dataset.abilities || '{}'); } catch(e) { return; }
+        for (const a of (ab[phase] || [])) {
+            if (s !== battleSeq) return;
+            if (!isAlive(card)) return;
+            flashCard(card); SFX.play('ability');
+            logAdd(`✨ ${card.dataset.name}: ${a.icon} ${a.label}`);
+            await runAbility(card, a, ctx || {}, s);
+            await sleep(350);
+        }
+        if (s === battleSeq) await flushOnKills(s);
+    }
+    function getAbilityTargets(source, ab) {
+        const srcP = source.dataset.isPlayer === 'true';
+        const want = (ab.targetSide === 'ally') ? srcP : !srcP;
+        const out = [];
+        (ab.positions || []).forEach(([r, c]) => {
+            const el = cardAt(r, c);
+            if (el && el.dataset.isPlayer === String(want)) out.push(el);
+        });
+        return out;
+    }
+    function summonMinions(source, stat) {
+        const side = source.dataset.isPlayer === 'true';
+        const r0 = side ? 3 : 0;
+        const sRow = +source.parentElement.dataset.row;
+        const empties = [];
+        for (let c = 0; c < 3; c++) for (let r = r0; r < r0+3; r++) if (!cardAt(r, c)) empties.push([r, c]);
+        empties.sort((a, b) => Math.abs(a[0]-sRow) - Math.abs(b[0]-sRow));
+        if (!empties.length) { showFloat(source, '⛔ جا خالی نیست', '#ff8a80'); return; }
+        const [r, c] = empties[0];
+        const def = { name: 'روح', type: 'attacker', tier: 'normal',
+                      attack: clamp(stat, 0, 99), health: clamp(stat, 1, 99),
+                      icon: '👻', image: null, borderColor: '#b0bec5',
+                      sounds: defaultSounds(),
+                      passives: defaultPassives(),
+                      abilities: { onStart:[],onTurnStart:[],onAttack:[],onDefend:[],onKill:[],onDeath:[] } };
+        const el = makeCardEl(def, side, true);
+        el.addEventListener('click', ev => onCardClick(ev, el));
+        if (side && currentTurn === 'player' && !busy) el.classList.add('can-attack');
+        else { el.dataset.hasAttacked = 'true'; }
+        putInSlot(r, c, el);
+        showFloat(el, '👻 احضار شد!', '#ce93d8');
+        SFX.play('summon');
+        logAdd(`👻 روحی با ${stat} قدرت/جون احضار شد`);
+    }
+    async function runAbility(source, ab, ctx, seq) {
+        const s = seq ?? battleSeq;
+        const amt = Math.max(0, parseInt(ab.amount) || 0);
+        const godBlock = (t) => { showFloat(t, '✨ مصون!', '#ffd54f'); };
+
+        if (ab.action === 'thorns' && ctx && ctx.killer) {
+            const k = ctx.killer;
+            if (isAlive(k)) {
+                showFloat(isAlive(source) ? source : k, '🌵 پاتک!', '#4fc3f7');
+                SFX.play('thorns');
+                dealDamage(k, amt, source);
+                logAdd(`🌵 پاتکِ بعد از مرگ ${source.dataset.name}: ${amt} به ${k.dataset.name}`);
+            }
+            return;
+        }
+
+        switch (ab.action) {
+            case 'counterAttack': {
+                const t = ctx && ctx.attacker;
+                if (isAlive(t)) {
+                    showFloat(source, '🗡️ حمله متقابل!', '#ff8a80');
+                    SFX.play('thorns');
+                    dealDamage(t, amt, source);
+                    logAdd(`🗡️ ${source.dataset.name} به حمله‌کننده ${amt} آسیب متقابل زد`);
+                }
+                break;
+            }
+            case 'lifesteal': {
+                if (isAlive(source) && amt > 0) {
+                    const mx = +source.dataset.maxHealth;
+                    const before = +source.dataset.health;
+                    const hp = Math.min(mx, before + amt);
+                    source.dataset.health = String(hp);
+                    updateHP(source);
+                    showFloat(source, `+${hp - before} 🩸`, '#f06292');
+                    flashCard(source, 'heal-flash');
+                    SFX.play('heal');
+                }
+                break;
+            }
+            case 'execute': {
+                for (const t of getAbilityTargets(source, ab)) {
+                    if (s !== battleSeq) return;
+                    if (!isAlive(t)) continue;
+                    if (t.dataset.type === 'god') { godBlock(t); continue; }
+                    if ((+t.dataset.health) <= amt) {
+                        showFloat(t, '🪦 اعدام!', '#ff1744');
+                        killCard(t, source);
+                    } else {
+                        showFloat(t, '🪦 جانش بیشتر است', '#90a4ae');
+                    }
+                    await sleep(300);
+                }
+                break;
+            }
+            case 'silence': {
+                let n = 0;
+                for (const t of getAbilityTargets(source, ab)) {
+                    if (n >= amt) break;
+                    if (!isAlive(t)) continue;
+                    if (t.dataset.type === 'god') { godBlock(t); continue; }
+                    t.dataset.silenced = '1';
+                    updateStatus(t);
+                    showFloat(t, '🔇 ساکت شد!', '#90a4ae');
+                    n++;
+                }
+                if (n) { SFX.play('freeze'); logAdd(`🔇 ${n} کارت ساکت شدند (قابلیت‌هایشان قطع شد)`); }
+                break;
+            }
+            case 'burn': {
+                let any = false;
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t)) return;
+                    if (t.dataset.type === 'god') { godBlock(t); return; }
+                    const cur = +t.dataset.burn || 0;
+                    t.dataset.burn = String(cur + amt);
+                    updateStatus(t);
+                    showFloat(t, `🔥+${amt}`, '#ff7043');
+                    SFX.play('poison');
+                    any = true;
+                });
+                if (any) logAdd(`🔥 آتش (${amt}) اعمال شد`);
+                break;
+            }
+            case 'maxHpUp': {
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t)) return;
+                    const mx = clamp((+t.dataset.maxHealth) + amt, 1, 99);
+                    t.dataset.maxHealth = String(mx);
+                    t.dataset.health = String(Math.min(mx, (+t.dataset.health) + amt));
+                    updateHP(t);
+                    showFloat(t, `💖+${amt}`, '#f06292');
+                    flashCard(t, 'heal-flash');
+                });
+                SFX.play('heal');
+                break;
+            }
+            case 'maxHpDown': {
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t)) return;
+                    if (t.dataset.type === 'god') { godBlock(t); return; }
+                    const mx = Math.max(1, (+t.dataset.maxHealth) - amt);
+                    t.dataset.maxHealth = String(mx);
+                    if ((+t.dataset.health) > mx) { t.dataset.health = String(mx); }
+                    updateHP(t);
+                    showFloat(t, `🩹-${amt}`, '#ff8a80');
+                });
+                SFX.play('hit');
+                break;
+            }
+            case 'stealAttack': {
+                let total = 0;
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t) || !isAlive(source)) return;
+                    if (t.dataset.type === 'god') { godBlock(t); return; }
+                    const take = Math.min(amt, +t.dataset.attack);
+                    if (take <= 0) return;
+                    t.dataset.attack = String((+t.dataset.attack) - take);
+                    updateAtk(t);
+                    total += take;
+                    showFloat(t, `🥷-${take} ⚔️`, '#ce93d8');
+                });
+                if (total > 0 && isAlive(source)) {
+                    source.dataset.attack = String((+source.dataset.attack) + total);
+                    updateAtk(source);
+                    showFloat(source, `🥷+${total} ⚔️`, '#ffd54f');
+                    SFX.play('steal');
+                    logAdd(`🥷 ${source.dataset.name} ${total} قدرت دزدید`);
+                }
+                break;
+            }
+            case 'drain': {
+                let total = 0;
+                for (const t of getAbilityTargets(source, ab)) {
+                    if (s !== battleSeq) return;
+                    if (!isAlive(t)) continue;
+                    total += dealDamage(t, amt, source);
+                    await sleep(200);
+                }
+                if (total > 0 && isAlive(source)) {
+                    const mx = +source.dataset.maxHealth;
+                    const before = +source.dataset.health;
+                    const hp = Math.min(mx, before + total);
+                    source.dataset.health = String(hp);
+                    updateHP(source);
+                    showFloat(source, `🧛+${hp - before}`, '#f06292');
+                    flashCard(source, 'heal-flash');
+                    SFX.play('heal');
+                    logAdd(`🧛 ${source.dataset.name} ${total} آسیب زد و ${hp - before} مکید`);
+                }
+                break;
+            }
+            case 'splash': {
+                for (const t of getAbilityTargets(source, ab)) {
+                    if (s !== battleSeq) return;
+                    if (!isAlive(t)) continue;
+                    const tr = +t.parentElement.dataset.row, tc = +t.parentElement.dataset.col;
+                    showFloat(t, '🌊', '#4fc3f7');
+                    dealDamage(t, amt, source);
+                    [tc-1, tc+1].forEach(nc => {
+                        if (nc < 0 || nc > 2) return;
+                        const nb = cardAt(tr, nc);
+                        if (nb) { const half = Math.floor(amt/2); if (half > 0) dealDamage(nb, half, source); }
+                    });
+                    await sleep(250);
+                }
+                break;
+            }
+            case 'cleanse': {
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t)) return;
+                    t.dataset.poison = '0'; t.dataset.burn = '0';
+                    t.dataset.frozen = '0'; t.dataset.silenced = '0';
+                    t.classList.remove('frozen');
+                    updateStatus(t);
+                    showFloat(t, '🧼 پاک شد!', '#69f0ae');
+                });
+                SFX.play('heal');
+                break;
+            }
+            case 'dispel': {
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t)) return;
+                    if (t.dataset.type === 'god') { godBlock(t); return; }
+                    t.dataset.shield = '0'; t.dataset.thorns = '0';
+                    t.dataset.taunt = '0'; t.dataset.dodge = '0';
+                    updateStatus(t);
+                    showFloat(t, '🌪 جادو زدوده شد!', '#b0bec5');
+                });
+                SFX.play('dodge');
+                break;
+            }
+            case 'summon': {
+                summonMinions(source, amt || 1);
+                break;
+            }
+            case 'healFull': {
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t)) return;
+                    const before = +t.dataset.health;
+                    t.dataset.health = t.dataset.maxHealth;
+                    updateHP(t);
+                    showFloat(t, `✨+${(+t.dataset.maxHealth) - before}`, '#69f0ae');
+                    flashCard(t, 'heal-flash');
+                });
+                SFX.play('heal');
+                break;
+            }
+            case 'destroyMage':     await destroyByType(getAbilityTargets(source, ab), 'mage', amt, s, source); break;
+            case 'destroyDefender': await destroyByType(getAbilityTargets(source, ab), 'defender', amt, s, source); break;
+            case 'destroyAttacker': await destroyByType(getAbilityTargets(source, ab), 'attacker', amt, s, source); break;
+            case 'heal':            healCards(getAbilityTargets(source, ab), amt); break;
+            case 'damage': {
+                for (const t of getAbilityTargets(source, ab)) {
+                    if (s !== battleSeq) return;
+                    dealDamage(t, amt, source);
+                    await sleep(200);
+                }
+                break;
+            }
+            case 'buffAttack': changeAttack(getAbilityTargets(source, ab), amt, true); break;
+            case 'nerfAttack': changeAttack(getAbilityTargets(source, ab), amt, false); break;
+            case 'freeze':     freezeCards(getAbilityTargets(source, ab), amt); break;
+            case 'shield': {
+                let any = false;
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t)) return;
+                    const cur = +t.dataset.shield || 0;
+                    t.dataset.shield = String(cur + amt);
+                    updateStatus(t);
+                    showFloat(t, `🛡️+${amt}`, '#4fc3f7');
+                    flashCard(t, 'shield-flash');
+                    any = true;
+                });
+                if (any) { SFX.play('shield'); logAdd(`🛡️ سپر ${amt} اعطا شد`); }
+                break;
+            }
+            case 'poison': {
+                let any = false;
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t)) return;
+                    if (t.dataset.type === 'god') { godBlock(t); return; }
+                    const cur = +t.dataset.poison || 0;
+                    t.dataset.poison = String(cur + amt);
+                    updateStatus(t);
+                    showFloat(t, `☠️+${amt}`, '#ce93d8');
+                    SFX.play('poison');
+                    any = true;
+                });
+                if (any) logAdd(`☠️ زهر (${amt}) اعمال شد`);
+                break;
+            }
+            case 'taunt': {
+                let any = false;
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t)) return;
+                    t.dataset.taunt = '1';
+                    updateStatus(t);
+                    showFloat(t, '🎯 تحریک!', '#ff8a80');
+                    any = true;
+                });
+                if (any) { SFX.play('taunt'); logAdd('🎯 کارت تحریک شد — باید اول به آن حمله شود'); }
+                break;
+            }
+            case 'dodge': {
+                let any = false;
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t)) return;
+                    const d = Math.min(90, (+t.dataset.dodge || 0) + amt);
+                    t.dataset.dodge = String(d);
+                    updateStatus(t);
+                    showFloat(t, `💨${d}%`, '#b0bec5');
+                    any = true;
+                });
+                if (any) SFX.play('dodge');
+                break;
+            }
+            case 'thorns': {
+                getAbilityTargets(source, ab).forEach(t => {
+                    if (!isAlive(t)) return;
+                    const th = (+t.dataset.thorns || 0) + amt;
+                    t.dataset.thorns = String(th);
+                    updateStatus(t);
+                    showFloat(t, '🌵 خار ' + th, '#4fc3f7');
+                });
+                SFX.play('buff');
+                break;
+            }
+        }
+    }
+    async function destroyByType(targets, type, count, s, source) {
+        let killed = 0;
+        for (const t of targets) {
+            if (killed >= count) break;
+            if (s !== battleSeq) return;
+            if (!isAlive(t)) continue;
+            if (t.dataset.type === 'god') { showFloat(t, '✨ مصون!', '#ffd54f'); continue; }
+            showFloat(t, '💀 نابودی!', '#ff1744');
+            killCard(t, source);
+            killed++;
+            await sleep(300);
+        }
+    }
+    function healCards(targets, amount) {
+        let any = false;
+        targets.forEach(t => {
+            if (!isAlive(t)) return;
+            const mx = +t.dataset.maxHealth;
+            const before = +t.dataset.health;
+            const hp = Math.min(mx, before + amount);
+            if (hp === before) { showFloat(t, 'سلامت کامل', '#9e9e9e'); return; }
+            t.dataset.health = String(hp);
+            updateHP(t);
+            showFloat(t, '+' + (hp - before) + ' ❤️', '#69f0ae');
+            flashCard(t, 'heal-flash');
+            any = true;
+        });
+        if (any) SFX.play('heal');
+    }
+    function changeAttack(targets, amount, isBuff) {
+        if (amount <= 0) return;
+        let any = false;
+        targets.forEach(t => {
+            if (!isAlive(t)) return;
+            if (!isBuff && t.dataset.type === 'god') { showFloat(t, '✨ مصون!', '#ffd54f'); return; }
+            let a = (+t.dataset.attack) + (isBuff ? amount : -amount);
+            if (a < 0) a = 0;
+            t.dataset.attack = String(a);
+            updateAtk(t);
+            showFloat(t, (isBuff ? '+' : '-') + amount + ' ⚔️', isBuff ? '#ffd54f' : '#ff8a80');
+            any = true;
+        });
+        if (any) SFX.play(isBuff ? 'buff' : 'hit');
+    }
+    function freezeCards(targets, count) {
+        let n = 0;
+        for (const t of targets) {
+            if (n >= count) break;
+            if (!isAlive(t)) continue;
+            if (t.dataset.type === 'god') { showFloat(t, '✨ مصون!', '#ffd54f'); continue; }
+            t.dataset.frozen = '1';
+            t.classList.add('frozen');
+            t.classList.remove('can-attack', 'selected');
+            if (selectedCard === t) selectedCard = null;
+            showFloat(t, '❄️ یخ زد!', '#4fc3f7');
+            n++;
+        }
+        if (n) { SFX.play('freeze'); logAdd(`❄️ ${n} کارت یخ زدند`); }
+    }
+
+    // ================= فازهای شروع =================
+    async function runStartPhase(s) {
+        const cards = [];
+        document.querySelectorAll('#game-board .card').forEach(el => {
+            if (isAlive(el)) cards.push(el);
+        });
+        for (const el of cards) {
+            if (s !== battleSeq) return;
+            // 🔊 صدای شروع شخصی
+            if (el.dataset.soundStart) {
+                playCardSound(el, 'start');
+                await sleep(250);
+                if (s !== battleSeq) return;
+            }
+            await runPhase(el, 'onStart', null, s);
+            if (s !== battleSeq) return;
+            if (el.dataset.type === 'spell' && isAlive(el)) {
+                showFloat(el, '✨ افسون!', '#ffd54f');
+                await sleep(350);
+                if (s !== battleSeq) return;
+                el.dataset.dead = '1';
+                const r = +el.parentElement.dataset.row, c = +el.parentElement.dataset.col;
+                if (board[r]) board[r][c] = null;
+                el.classList.add('dying');
+                setTimeout(() => el.remove(), 500);
+                logAdd(`📜 افسون «${el.dataset.name}» مصرف شد`);
+                await sleep(200);
+            }
+        }
+    }
+    async function tickDoTSide(isP, s) {
+        const cards = [];
+        document.querySelectorAll('#game-board .card').forEach(el => {
+            if (el.dataset.isPlayer === String(isP) && isAlive(el) &&
+                ((+el.dataset.poison || 0) > 0 || (+el.dataset.burn || 0) > 0)) cards.push(el);
+        });
+        for (const el of cards) {
+            if (s !== battleSeq || gameOver) return;
+            const po = +el.dataset.poison || 0;
+            const bu = +el.dataset.burn || 0;
+            if (po > 0) {
+                showFloat(el, '☠️ زهر ' + po, '#ce93d8');
+                SFX.play('poison');
+                dealDamage(el, po, null);
+                logAdd(`☠️ ${el.dataset.name} ${po} آسیب زهر خورد`);
+                if (isAlive(el)) { el.dataset.poison = String(Math.max(0, po - 1)); updateStatus(el); }
+                await sleep(350);
+            }
+            if (s !== battleSeq || gameOver) return;
+            if (bu > 0 && isAlive(el)) {
+                showFloat(el, '🔥 آتش ' + bu, '#ff7043');
+                SFX.play('poison');
+                dealDamage(el, bu, null);
+                logAdd(`🔥 ${el.dataset.name} ${bu} آسیب آتش خورد`);
+                if (isAlive(el)) { el.dataset.burn = String(Math.max(0, bu - 1)); updateStatus(el); }
+                await sleep(350);
+            }
+        }
+    }
+    async function runSidePassives(isP, s) {
+        const cards = [];
+        document.querySelectorAll('#game-board .card').forEach(el => {
+            if (el.dataset.isPlayer === String(isP) && isAlive(el)) cards.push(el);
+        });
+        for (const el of cards) {
+            if (s !== battleSeq || gameOver) return;
+            const rg = +el.dataset.regen || 0;
+            if (rg > 0) {
+                const mx = +el.dataset.maxHealth;
+                const before = +el.dataset.health;
+                const hp = Math.min(mx, before + rg);
+                if (hp > before) {
+                    el.dataset.health = String(hp);
+                    updateHP(el);
+                    showFloat(el, `+${hp - before} 💚`, '#69f0ae');
+                    SFX.play('heal');
+                }
+            }
+            const ra = +el.dataset.rage || 0;
+            if (ra > 0) {
+                el.dataset.attack = String((+el.dataset.attack) + ra);
+                updateAtk(el);
+                showFloat(el, `🔥+${ra} ⚔️`, '#ff8a80');
+                SFX.play('buff');
+            }
+            await sleep(150);
+        }
+    }
+    async function runSideTurnStart(isP, s) {
+        const cards = [];
+        document.querySelectorAll('#game-board .card').forEach(el => {
+            if (el.dataset.isPlayer === String(isP) && isAlive(el)) cards.push(el);
+        });
+        for (const el of cards) {
+            if (s !== battleSeq || gameOver) return;
+            await runPhase(el, 'onTurnStart', null, s);
+        }
+    }
+
+    // ================= برد / باخت =================
+    function scheduleWinCheck() {
+        clearTimeout(winTimer);
+        winTimer = setTimeout(checkWin, 1000);
+    }
+    function countAliveSide(isP) {
+        let n = 0;
+        for (let r = isP?3:0; r < (isP?6:3); r++)
+            for (let c = 0; c < 3; c++) if (cardAt(r, c)) n++;
+        return n;
+    }
+    function kingAlive(isP) {
+        for (let r = isP?3:0; r < (isP?6:3); r++)
+            for (let c = 0; c < 3; c++) {
+                const el = cardAt(r, c);
+                if (el && el.dataset.type === 'king') return true;
+            }
+        return false;
+    }
+    function checkWin() {
+        if (gameOver) return;
+        const eK = kingAlive(false), pK = kingAlive(true);
+        const eN = countAliveSide(false), pN = countAliveSide(true);
+        if (!eK || eN === 0) endGame(true);
+        else if (!pK || pN === 0) endGame(false);
+    }
+    function endGame(playerWon) {
+        if (gameOver) return;
+        gameOver = true;
+        stats.played++;
+        if (playerWon) stats.wins++; else stats.losses++;
+        saveLS('nabard_stats_v2', stats);
+        SFX.play(playerWon ? 'victory' : 'defeat');
+        logAdd(playerWon ? '🏆 شما برنده شدید!' : '💀 دشمن برنده شد', 'log-turn');
+        setTimeout(() => {
+            $('ov-title').textContent = playerWon ? '🏆 پیروزی!' : '💀 شکست!';
+            $('ov-title').style.color = playerWon ? '#ffd54f' : '#ff5252';
+            $('ov-sub').textContent = playerWon ? 'دشمنان شما نابود شدند!' : 'نیروهای شما نابود شدند!';
+            $('ov-stats').innerHTML =
+                `<div>🎯 تعداد نوبت‌ها: ${turnCount}</div>` +
+                `<div>🥇 برد: ${stats.wins} | 🥉 باخت: ${stats.losses}</div>` +
+                `<div>⚔️ کل آسیب تاریخچه: ${stats.damage}</div>`;
+            $('overlay').style.display = 'flex';
+        }, 700);
+    }
+
+    // ================= مدیریت نوبت =================
+    function resetCanAttack(isP) {
+        document.querySelectorAll('#game-board .card').forEach(el => {
+            if (el.dataset.isPlayer === String(isP) && isAlive(el)) {
+                el.dataset.hasAttacked = 'false';
+                if (el.dataset.frozen !== '1' && el.dataset.type !== 'spell') el.classList.add('can-attack');
+            }
+        });
+    }
+    function clearSideDebuffs(isP) {
+        document.querySelectorAll('#game-board .card').forEach(el => {
+            if (el.dataset.isPlayer === String(isP)) {
+                if (isAlive(el) && el.dataset.frozen === '1') {
+                    el.dataset.frozen = '0';
+                    el.classList.remove('frozen');
+                    logAdd(`❄️ ${el.dataset.name} از یخ آزاد شد`);
+                }
+                if (isAlive(el) && el.dataset.silenced === '1') {
+                    el.dataset.silenced = '0';
+                    updateStatus(el);
+                    logAdd(`🔊 ${el.dataset.name} از سکوت خارج شد`);
+                }
+            }
+        });
+    }
+    function updateTurnUI() {
+        const t = $('turn-indicator');
+        if (currentTurn === 'player') { t.innerText = `✅ نوبت ${turnCount}: بازیکن`; t.style.color = '#ffb300'; }
+        else { t.innerText = `⏳ نوبت ${turnCount}: دشمن`; t.style.color = '#ff5252'; }
+    }
+    async function startEnemyTurn() {
+        if (gameOver) return;
+        const s = battleSeq;
+        busy = true;
+        currentTurn = 'enemy';
+        clearSideDebuffs(true);
+        updateTurnUI();
+        logAdd('⏳ نوبت دشمن', 'log-turn');
+        await tickDoTSide(false, s);
+        if (s !== battleSeq || gameOver) { busy = false; return; }
+        await runSidePassives(false, s);
+        if (s !== battleSeq || gameOver) { busy = false; return; }
+        resetCanAttack('false');
+        await runSideTurnStart(false, s);
+        if (s !== battleSeq || gameOver) { busy = false; return; }
+        await enemyTurnLoop(s);
+    }
+    async function startPlayerTurn() {
+        if (gameOver) return;
+        const s = battleSeq;
+        busy = true;
+        turnCount++;
+        currentTurn = 'player';
+        clearSideDebuffs(false);
+        updateTurnUI();
+        logAdd('✅ نوبت شما', 'log-turn');
+        await tickDoTSide(true, s);
+        if (s !== battleSeq || gameOver) { busy = false; return; }
+        await runSidePassives(true, s);
+        if (s !== battleSeq || gameOver) { busy = false; return; }
+        resetCanAttack('true');
+        await runSideTurnStart(true, s);
+        if (s !== battleSeq || gameOver) { busy = false; return; }
+        busy = false;
+    }
+
+    // ================= هوش مصنوعی دشمن =================
+    async function enemyTurnLoop(s) {
+        await sleep(600);
+        while (!gameOver && s === battleSeq && currentTurn === 'enemy') {
+            const atk = pickEnemyAttacker();
+            if (!atk) break;
+            const tgt = pickTargetFor(atk);
+            if (!tgt) { atk.dataset.hasAttacked = 'true'; atk.classList.remove('can-attack'); continue; }
+            await performAttack(atk, tgt);
+            if (gameOver || s !== battleSeq) { busy = false; return; }
+            await sleep(320);
+        }
+        if (s === battleSeq && !gameOver) await startPlayerTurn();
+        else busy = false;
+    }
+    function pickEnemyAttacker() {
+        const list = [];
+        for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+            const el = cardAt(r, c);
+            if (el && el.dataset.hasAttacked !== 'true' && el.dataset.frozen !== '1' && el.dataset.type !== 'spell')
+                list.push(el);
+        }
+        return list.length ? list[Math.floor(Math.random() * list.length)] : null;
+    }
+    function protectedBy(row, col) {
+        if (row === 5) return cardAt(4, col);
+        if (row === 4) return cardAt(3, col);
+        return null;
+    }
+    function pickTargetFor(attacker) {
+        const all = [];
+        for (let r = 3; r < 6; r++) for (let c = 0; c < 3; c++) {
+            const el = cardAt(r, c);
+            if (el) all.push({ el, row: r, col: c });
+        }
+        if (!all.length) return null;
+        const sniper = attacker.dataset.ignoreGuard === '1';
+        let pool = sniper ? all : all.filter(o => {
+            const g = protectedBy(o.row, o.col);
+            return !(g && (g.dataset.type === 'defender' || g.dataset.type === 'both'));
+        });
+        if (!pool.length) pool = all;
+        const nonStealth = pool.filter(o => o.el.dataset.stealth !== '1');
+        if (nonStealth.length) pool = nonStealth;
+        if (!sniper) {
+            const taunts = pool.filter(o => o.el.dataset.taunt === '1');
+            if (taunts.length) pool = taunts;
+        }
+        const score = o => {
+            const t = o.el.dataset.type;
+            let sc = t === 'king' ? 60 : t === 'mage' ? 45 : t === 'attacker' ? 35 : t === 'both' ? 25 : t === 'god' ? 30 : 15;
+            if ((+attacker.dataset.attack) >= (+o.el.dataset.health)) sc += 30;
+            sc += ((+o.el.dataset.maxHealth) - (+o.el.dataset.health)) * 0.5;
+            return sc;
+        };
+        let best = null, bs = -1;
+        pool.forEach(o => { const sc = score(o); if (sc > bs) { bs = sc; best = o; } });
+        return best.el;
+    }
+
+    // ================= شروع بازی =================
+    async function startGame() {
+        battleSeq++;
+        const s = battleSeq;
+        gameOver = false; inspectMode = false;
+        pendingOnKills = [];
+        $('btn-inspect').classList.remove('active');
+        turnCount = 1;
+        selectedCard = null;
+        currentTurn = 'player';
+        gameStartTime = performance.now();
+        $('overlay').style.display = 'none';
+        buildGameBoard();
+        logAdd('— نبرد جدید شروع شد —', 'log-turn');
+        updateTurnUI();
+        busy = true;
+        await sleep(500);
+        await runStartPhase(s);
+        if (s !== battleSeq) { busy = false; return; }
+        await runSidePassives(true, s);
+        if (s !== battleSeq) { busy = false; return; }
+        resetCanAttack('true');
+        await runSideTurnStart(true, s);
+        if (s !== battleSeq) { busy = false; return; }
+        busy = false;
+    }
+
+    // ================= ادیتور: صفحه =================
+    function buildEditorBoard() {
+        document.querySelectorAll('#editor-board .row').forEach(rowEl => {
+            const r = +rowEl.dataset.erow;
+            for (let c = 0; c < 3; c++) {
+                const slot = document.createElement('div');
+                slot.className = 'card-slot';
+                slot.dataset.row = r; slot.dataset.col = c;
+                slot.addEventListener('click', () => onEditorSlotClick(r, c));
+                rowEl.appendChild(slot);
+            }
+        });
+    }
+    function onEditorSlotClick(r, c) {
+        const cur = editorLayout[r][c];
+        if (cur && cur.kind !== 'default') {
+            editorLayout[r][c] = defaultEntry(r, c);
+            toast('کارت حذف شد');
+        } else {
+            editorLayout[r][c] = placingDef
+                ? { kind: 'custom', data: deepCopy(placingDef) }
+                : { kind: 'draft' };
+            SFX.play('select');
+        }
+        layoutDirty = true;
+        renderEditorBoard();
+    }
+    function renderEditorBoard() {
+        document.querySelectorAll('#editor-board .row').forEach(rowEl => {
+            const r = +rowEl.dataset.erow;
+            for (let c = 0; c < 3; c++) {
+                const slot = rowEl.children[c];
+                if (!slot) continue;
+                slot.innerHTML = '';
+                const e = editorLayout[r][c];
+                if (!e) continue;
+                let el;
+                if (e.kind === 'default') {
+                    const d = CARD_DATA[e.id];
+                    el = makeCardEl({...d, id: e.id}, r >= 3, false);
+                } else if (e.kind === 'draft') {
+                    el = makeCardEl(deepCopy(editorCard), r >= 3, true);
+                } else {
+                    el = makeCardEl(deepCopy(e.data), r >= 3, true);
+                }
+                el.classList.add('static');
+                slot.appendChild(el);
+            }
+        });
+    }
+    function renderPreview() {
+        const box = $('draft-preview');
+        box.innerHTML = '';
+        const el = makeCardEl(deepCopy(editorCard), true, true);
+        el.classList.add('static');
+        box.appendChild(el);
+    }
+
+    // ================= ادیتور: فرم =================
+    function fillFormFromCard() {
+        $('ed-name').value = editorCard.name || '';
+        $('ed-type').value = editorCard.type || 'attacker';
+        $('ed-tier').value = editorCard.tier || 'normal';
+        $('ed-attack').value = editorCard.attack;
+        $('ed-health').value = editorCard.health;
+        $('ed-icon').value = editorCard.icon || '';
+        $('ed-border').value = editorCard.borderColor || '#ffb300';
+        $('ed-image').value = '';
+        ['start','attack','death'].forEach(t => {
+            $('ed-snd-' + t).value = '';
+            updateSndStatus(t);
+        });
+        renderPassives();
+    }
+    function bindFormInputs() {
+        const refresh = () => { layoutDirty = true; renderPreview(); renderEditorBoard(); };
+        $('ed-name').addEventListener('input', e => { editorCard.name = e.target.value; refresh(); });
+        $('ed-type').addEventListener('change', e => { editorCard.type = e.target.value; refresh(); });
+        $('ed-tier').addEventListener('change', e => { editorCard.tier = e.target.value; refresh(); });
+        $('ed-attack').addEventListener('input', e => { editorCard.attack = clamp(parseInt(e.target.value) || 0, 0, 99); refresh(); });
+        $('ed-health').addEventListener('input', e => { editorCard.health = clamp(parseInt(e.target.value) || 1, 1, 99); refresh(); });
+        $('ed-icon').addEventListener('input', e => { editorCard.icon = e.target.value; refresh(); });
+        $('ed-border').addEventListener('input', e => { editorCard.borderColor = e.target.value; refresh(); });
+        $('ed-image').addEventListener('change', handleImageUpload);
+        $('ed-remove-image').addEventListener('click', () => {
+            editorCard.image = null; $('ed-image').value = ''; refresh();
+        });
+    }
+    function handleImageUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const img = new Image();
+            img.onload = () => {
+                const MAX = 180;
+                const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+                const cv = document.createElement('canvas');
+                cv.width = Math.round(img.width * scale);
+                cv.height = Math.round(img.height * scale);
+                cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+                editorCard.image = cv.toDataURL('image/jpeg', 0.82);
+                layoutDirty = true;
+                renderPreview(); renderEditorBoard();
+                toast('✅ عکس اضافه شد');
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+    function buildSwatches() {
+        const wrap = $('color-swatches');
+        PRESET_COLORS.forEach(col => {
+            const s = document.createElement('div');
+            s.className = 'swatch'; s.style.background = col;
+            s.addEventListener('click', () => {
+                editorCard.borderColor = col;
+                $('ed-border').value = col;
+                layoutDirty = true;
+                renderPreview(); renderEditorBoard();
+            });
+            wrap.appendChild(s);
+        });
+    }
+
+    // ================= ادیتور: صداهای کارت =================
+    function updateSndStatus(type) {
+        $('snd-status-' + type).textContent = editorCard.sounds && editorCard.sounds[type] ? '✅ دارد' : '—';
+    }
+    ['start','attack','death'].forEach(type => {
+        $('ed-snd-' + type).addEventListener('change', e => {
+            const f = e.target.files[0];
+            if (!f) return;
+            if (f.size > 500 * 1024) toast('⚠️ فایل صوتی بزرگ است؛ ممکن است ذخیره نشود');
+            const r = new FileReader();
+            r.onload = ev => {
+                editorCard.sounds = editorCard.sounds || defaultSounds();
+                editorCard.sounds[type] = ev.target.result;
+                updateSndStatus(type);
+                layoutDirty = true;
+                renderPreview(); renderEditorBoard();
+                toast('✅ صدا اضافه شد');
+            };
+            r.readAsDataURL(f);
+        });
+    });
+    document.querySelectorAll('.snd-mini').forEach(b => {
+        b.addEventListener('click', () => {
+            const type = b.dataset.snd, act = b.dataset.act;
+            editorCard.sounds = editorCard.sounds || defaultSounds();
+            if (act === 'play') {
+                const src = editorCard.sounds[type];
+                if (!src) { toast('صدایی ثبت نشده'); return; }
+                try { new Audio(src).play().catch(()=>{}); } catch(e) {}
+            } else {
+                editorCard.sounds[type] = null;
+                $('ed-snd-' + type).value = '';
+                updateSndStatus(type);
+                layoutDirty = true;
+                renderPreview(); renderEditorBoard();
+                toast('🗑 صدا حذف شد');
+            }
+        });
+    });
+
+    // ================= ادیتور: پسیوها =================
+    function renderPassives() {
+        const wrap = $('passive-list');
+        wrap.innerHTML = '';
+        PASSIVE_DEFS.forEach(def => {
+            const on = !!editorCard.passives[def.key];
+            const chip = document.createElement('button');
+            chip.className = 'pv-chip' + (on ? ' on' : '');
+            chip.innerHTML = `${def.icon} ${def.label}`;
+            chip.addEventListener('click', () => {
+                editorCard.passives[def.key] = !editorCard.passives[def.key];
+                if (editorCard.passives[def.key] && def.hasAmount && !editorCard.passives[def.key + '_v']) {
+                    editorCard.passives[def.key + '_v'] = def.def;
+                }
+                layoutDirty = true;
+                renderPassives(); renderPreview(); renderEditorBoard();
+            });
+            wrap.appendChild(chip);
+            if (on && def.hasAmount) {
+                const inp = document.createElement('input');
+                inp.type = 'number'; inp.className = 'pv-amt';
+                inp.min = 0; inp.max = 99;
+                inp.value = editorCard.passives[def.key + '_v'] ?? def.def;
+                inp.addEventListener('input', e => {
+                    editorCard.passives[def.key + '_v'] = clamp(parseInt(e.target.value) || 0, 0, 99);
+                    layoutDirty = true;
+                    renderPreview(); renderEditorBoard();
+                });
+                wrap.appendChild(inp);
+            }
+        });
+        const descs = PASSIVE_DEFS.filter(d => editorCard.passives[d.key])
+            .map(d => `${d.icon} <b>${d.label}:</b> ${d.desc}`);
+        $('pv-desc').innerHTML = descs.length ? descs.join('<br>') : 'برای فعال کردن، روی قابلیت‌ها بزنید';
+    }
+
+    // ================= ادیتور: قابلیت‌ها =================
+    function buildAbilityButtons() {
+        Object.keys(ABILITY_DEFS).forEach(phase => {
+            const wrap = $('add-btns-' + phase);
+            ABILITY_DEFS[phase].forEach(def => {
+                const b = document.createElement('button');
+                b.className = 'add-ability-btn';
+                b.innerText = `+ ${def.icon} ${def.label}`;
+                b.addEventListener('click', () => {
+                    editorCard.abilities[phase].push({
+                        action: def.action, label: def.label, icon: def.icon,
+                        amount: DEFAULT_AMOUNTS[def.action] ?? 1,
+                        targetSide: DEFAULT_SIDE[def.action] || 'enemy',
+                        positions: []
+                    });
+                    renderAbilityList(phase);
+                });
+                wrap.appendChild(b);
+            });
+        });
+    }
+    function renderAbilityList(phase) {
+        const list = $('list-' + phase);
+        list.innerHTML = '';
+        (editorCard.abilities[phase] || []).forEach((ab, idx) => list.appendChild(buildAbilityItem(phase, idx, ab)));
+        layoutDirty = true;
+        renderPreview(); renderEditorBoard();
+    }
+    function setAllPositions(ab, rows) {
+        ab.positions = [];
+        rows.forEach(r => { for (let c = 0; c < 3; c++) ab.positions.push([r, c]); });
+    }
+    function buildAbilityItem(phase, idx, ab) {
+        const meta = ACTION_META[ab.action] || {};
+        const item = document.createElement('div');
+        item.className = 'ability-item';
+
+        const head = document.createElement('div');
+        head.className = 'ability-head';
+        head.innerHTML = `<span class="ability-label">${ab.icon || '⚡'} ${esc(ab.label)}</span>`;
+        const del = document.createElement('button');
+        del.className = 'ability-del'; del.innerText = '🗑 حذف';
+        del.addEventListener('click', () => {
+            editorCard.abilities[phase].splice(idx, 1);
+            renderAbilityList(phase);
+        });
+        head.appendChild(del);
+        item.appendChild(head);
+
+        if (!meta.noAmount) {
+            const row1 = document.createElement('div');
+            row1.className = 'ability-row';
+            row1.innerHTML = `<label>${meta.unit || 'مقدار'}: <input type="number" class="ab-amount" min="0" max="99" value="${ab.amount}"></label>`;
+            item.appendChild(row1);
+            row1.querySelector('.ab-amount').addEventListener('input', e => {
+                ab.amount = clamp(parseInt(e.target.value) || 0, 0, 99);
+            });
+        }
+
+        if (meta.auto) {
+            const note = document.createElement('div');
+            note.className = 'auto-note';
+            note.innerText = ab.action === 'counterAttack'
+                ? '🎯 هدف خودکار: کارتی که به این کارت حمله می‌کند'
+                : '🎯 هدف خودکار: خودِ این کارت';
+            item.appendChild(note);
+        } else {
+            const row2 = document.createElement('div');
+            row2.className = 'ability-row';
+            row2.innerHTML = `
+                <label>هدف:
+                    <select class="ab-side">
+                        <option value="enemy" ${ab.targetSide === 'enemy' ? 'selected' : ''}>دشمن</option>
+                        <option value="ally" ${ab.targetSide === 'ally' ? 'selected' : ''}>خودی</option>
+                    </select>
+                </label>`;
+            item.appendChild(row2);
+            row2.querySelector('.ab-side').addEventListener('change', e => { ab.targetSide = e.target.value; });
+
+            const row3 = document.createElement('div');
+            row3.className = 'ability-row';
+            row3.innerHTML = '<span>📍 مکان‌های فعال شدن (بزنید تا روشن/خاموش شود):</span>';
+            item.appendChild(row3);
+
+            const grid = document.createElement('div');
+            grid.className = 'pos-grid';
+            for (let r = 0; r < 6; r++) {
+                if (r === 3) { const sep = document.createElement('div'); sep.className = 'pos-sep'; grid.appendChild(sep); }
+                for (let c = 0; c < 3; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'pos-cell ' + (r < 3 ? 'enemy-side' : 'ally-side');
+                    if ((ab.positions || []).some(p => p[0] === r && p[1] === c)) cell.classList.add('active');
+                    cell.addEventListener('click', () => {
+                        const i = ab.positions.findIndex(p => p[0] === r && p[1] === c);
+                        if (i >= 0) ab.positions.splice(i, 1); else ab.positions.push([r, c]);
+                        cell.classList.toggle('active');
+                        layoutDirty = true;
+                    });
+                    grid.appendChild(cell);
+                }
+            }
+            item.appendChild(grid);
+
+            const quick = document.createElement('div');
+            quick.className = 'pos-quick';
+            quick.innerHTML = `<button>🔴 همه دشمن</button><button>🟢 همه خودی</button><button>❌ پاک کردن</button>`;
+            const btns = quick.querySelectorAll('button');
+            btns[0].addEventListener('click', () => { setAllPositions(ab, [0,1,2]); renderAbilityList(phase); });
+            btns[1].addEventListener('click', () => { setAllPositions(ab, [3,4,5]); renderAbilityList(phase); });
+            btns[2].addEventListener('click', () => { ab.positions = []; renderAbilityList(phase); });
+            item.appendChild(quick);
+        }
+        return item;
+    }
+
+    // ================= ادیتور: ذخیره/جدید =================
+    $('ed-save').addEventListener('click', () => {
+        const data = deepCopy(editorCard);
+        data.name = (editorCard.name || '').trim() || 'بدون نام';
+        if (data.id) {
+            const i = customCards.findIndex(x => x.id === data.id);
+            if (i >= 0) { customCards[i] = data; toast('✅ کارت به‌روزرسانی شد'); }
+            else { data.id = 'cc_' + Date.now(); editorCard.id = data.id; customCards.push(data); toast('✅ ذخیره شد'); }
+        } else {
+            data.id = 'cc_' + Date.now();
+            editorCard.id = data.id;
+            customCards.push(data);
+            toast('✅ کارت در کتابخانه ذخیره شد');
+        }
+        if (!saveLS('nabard_custom_cards_v2', customCards)) {
+            customCards = customCards.filter(x => x.id !== data.id);
+            toast('⚠️ حافظه پر است! عکس یا صدای کوچک‌تری انتخاب کنید');
+        }
+        renderLibrary();
+    });
+    $('ed-new').addEventListener('click', () => {
+        editorCard = defaultDraft();
+        fillFormFromCard();
+        Object.keys(ABILITY_DEFS).forEach(renderAbilityList);
+        renderPreview(); renderEditorBoard();
+        toast('🆕 کارت جدید آماده است');
+    });
+
+    // ================= کتابخانه و تبادل =================
+    const enc = o => btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+    const dec = s => JSON.parse(decodeURIComponent(escape(atob(s.trim()))));
+    function normalizeSounds(s) {
+        const ok = (v) => (typeof v === 'string' && v.startsWith('data:audio')) ? v : null;
+        return { start: ok(s && s.start), attack: ok(s && s.attack), death: ok(s && s.death) };
+    }
+    function normalizePassives(p) {
+        p = p || {};
+        const num = (v, max = 99) => clamp(+v || 0, 0, max);
+        return {
+            doubleStrike: !!p.doubleStrike,
+            cleave: !!p.cleave,
+            crit: num(p.crit),
+            resurrect: num(p.resurrect, 100),
+            lastStand: !!p.lastStand,
+            regen: num(p.regen),
+            berserk: num(p.berserk),
+            rage: num(p.rage),
+            pierce: !!p.pierce,
+            ignoreGuard: !!p.ignoreGuard,
+            stealth: !!p.stealth
+        };
+    }
+    function sanitizeAb(a) {
+        const out = { onStart: [], onTurnStart: [], onAttack: [], onDefend: [], onKill: [], onDeath: [] };
+        if (!a || typeof a !== 'object') return out;
+        Object.keys(out).forEach(ph => {
+            if (!Array.isArray(a[ph])) return;
+            a[ph].forEach(it => {
+                if (!it || !KNOWN_ACTIONS.includes(it.action)) return;
+                const positions = (Array.isArray(it.positions) ? it.positions : [])
+                    .filter(p => Array.isArray(p) && p[0] >= 0 && p[0] < 6 && p[1] >= 0 && p[1] < 3)
+                    .map(p => [+p[0], +p[1]]);
+                out[ph].push({
+                    action: it.action, label: String(it.label || it.action), icon: String(it.icon || '⚡'),
+                    amount: clamp(+it.amount || 0, 0, 99),
+                    targetSide: it.targetSide === 'ally' ? 'ally' : 'enemy',
+                    positions
+                });
+            });
+        });
+        return out;
+    }
+    function normalizeDef(d, keepId) {
+        return {
+            id: keepId ? d.id : ('cc_' + Date.now() + Math.floor(Math.random() * 999)),
+            name: String(d.name || 'کارت').slice(0, 20),
+            type: TYPE_LABELS[d.type] ? d.type : 'attacker',
+            tier: ['normal','medium','legendary','god'].includes(d.tier) ? d.tier : 'normal',
+            attack: clamp(+d.attack || 0, 0, 99),
+            health: clamp(+d.health || 1, 1, 99),
+            icon: String(d.icon || '❓').slice(0, 4),
+            image: (typeof d.image === 'string' && d.image.startsWith('data:image')) ? d.image : null,
+            borderColor: /^#[0-9a-fA-F]{6}$/.test(d.borderColor || '') ? d.borderColor : '#ffb300',
+            sounds: normalizeSounds(d.sounds),
+            passives: normalizePassives(d.passives),
+            abilities: sanitizeAb(d.abilities)
+        };
+    }
+    function renderLibrary() {
+        const list = $('library-list');
+        list.innerHTML = '';
+        if (!customCards.length) {
+            list.innerHTML = '<div class="lib-empty">هنوز کارتی ذخیره نشده است</div>';
+            return;
+        }
+        customCards.forEach((cc, idx) => {
+            const item = document.createElement('div');
+            item.className = 'lib-item';
+            const abN = Object.values(cc.abilities || {}).reduce((n, a) => n + (a ? a.length : 0), 0);
+            const pvN = Object.values(cc.passives || {}).filter(v => v === true || (+v > 0)).length;
+            const sdN = Object.values(cc.sounds || {}).filter(v => v).length;
+            item.innerHTML = `
+                <div class="lib-thumb" style="--cb:${cc.borderColor||'#ffb300'}">${cc.image ? `<img src="${cc.image}">` : esc(cc.icon || '❓')}</div>
+                <div class="lib-name">${esc(cc.name || 'بدون نام')}</div>
+                <div class="lib-stats">⚔️${cc.attack} ❤️${cc.health} ${abN ? '⚡' + abN : ''} ${pvN ? '🔥' + pvN : ''} ${sdN ? '🔊' + sdN : ''}</div>
+                <button class="lib-load">📥</button><button class="lib-place">📍</button>
+                <button class="lib-dup">📋</button><button class="lib-exp">📤</button>
+                <button class="lib-del">🗑</button>`;
+            item.querySelector('.lib-load').addEventListener('click', () => {
+                editorCard = normalizeDef(cc, true);
+                fillFormFromCard();
+                Object.keys(ABILITY_DEFS).forEach(renderAbilityList);
+                renderPreview(); renderEditorBoard();
+                toast('📥 «' + cc.name + '» در ادیتور باز شد');
+            });
+            item.querySelector('.lib-place').addEventListener('click', () => {
+                placingDef = deepCopy(cc);
+                $('place-banner').style.display = 'block';
+                $('place-name').textContent = cc.name || 'کارت';
+                toast('📍 روی خانه‌های صفحه بزنید تا کارت چیده شود');
+                $('editor-scroll').scrollTop = 0;
+            });
+            item.querySelector('.lib-dup').addEventListener('click', () => {
+                const cp = deepCopy(cc);
+                cp.id = 'cc_' + Date.now();
+                cp.name = (cc.name || 'کارت') + ' (کپی)';
+                customCards.splice(idx + 1, 0, cp);
+                saveLS('nabard_custom_cards_v2', customCards);
+                renderLibrary();
+                toast('📋 کپی ساخته شد');
+            });
+            item.querySelector('.lib-exp').addEventListener('click', () => {
+                const code = enc(cc);
+                $('import-area').value = code;
+                if (navigator.clipboard) navigator.clipboard.writeText(code).then(() => toast('📤 کد کارت کپی شد')).catch(() => toast('📤 کد در کادر زیر است'));
+                else toast('📤 کد در کادر زیر است — کپی کنید');
+            });
+            item.querySelector('.lib-del').addEventListener('click', () => {
+                if (!confirm('این کارت حذف شود؟')) return;
+                customCards.splice(idx, 1);
+                saveLS('nabard_custom_cards_v2', customCards);
+                renderLibrary();
+            });
+            list.appendChild(item);
+        });
+    }
+    $('ed-import').addEventListener('click', () => {
+        const v = $('import-area').value.trim();
+        if (!v) { toast('کدی وارد کنید'); return; }
+        try {
+            const d = dec(v);
+            if (!d || typeof d !== 'object') throw 0;
+            const nd = normalizeDef(d);
+            customCards.push(nd);
+            saveLS('nabard_custom_cards_v2', customCards);
+            renderLibrary();
+            $('import-area').value = '';
+            toast('✅ کارت «' + nd.name + '» وارد شد');
+        } catch(e) { toast('❌ کد نامعتبر است'); }
+    });
+    $('place-banner').addEventListener('click', () => {
+        placingDef = null;
+        $('place-banner').style.display = 'none';
+        toast('✋ حالت چیدمان پایان یافت');
+    });
+
+    // ================= چیدمان‌های نبرد =================
+    $('setup-save').addEventListener('click', () => {
+        const name = $('setup-name').value.trim() || ('چیدمان ' + new Date().toLocaleDateString('fa-IR'));
+        const layout = deepCopy(editorLayout).map(row => row.map(e =>
+            e && e.kind === 'draft' ? { kind: 'custom', data: deepCopy(editorCard) } : e
+        ));
+        setups.unshift({ id: 'st_' + Date.now(), name, layout });
+        if (setups.length > 20) setups.pop();
+        if (!saveLS('nabard_setups_v2', setups)) {
+            setups.shift();
+            toast('⚠️ حافظه پر است! چیدمان با صدا/عکس زیاد ذخیره نشد');
+            return;
+        }
+        $('setup-name').value = '';
+        renderSetups();
+        toast('💾 چیدمان «' + name + '» ذخیره شد');
+    });
+    function renderSetups() {
+        const list = $('setups-list');
+        list.innerHTML = '';
+        if (!setups.length) {
+            list.innerHTML = '<div class="lib-empty">چیدمانی ذخیره نشده</div>';
+            return;
+        }
+        setups.forEach((s, idx) => {
+            const item = document.createElement('div');
+            item.className = 'setup-item';
+            item.innerHTML = `<span>🗂 ${esc(s.name)}</span><span>
+                <button style="background:#ffb300;color:#000;">📥 بارگذاری</button>
+                <button style="background:#b71c1c;color:#fff;">🗑</button></span>`;
+            const [loadBtn, delBtn] = item.querySelectorAll('button');
+            loadBtn.addEventListener('click', () => {
+                editorLayout = deepCopy(s.layout);
+                layoutDirty = true;
+                renderEditorBoard();
+                toast('📥 چیدمان «' + s.name + '» بارگذاری شد');
+            });
+            delBtn.addEventListener('click', () => {
+                setups.splice(idx, 1);
+                saveLS('nabard_setups_v2', setups);
+                renderSetups();
+            });
+            list.appendChild(item);
+        });
+    }
+    $('ed-reset-default').addEventListener('click', () => {
+        editorLayout = makeDefaultLayout();
+        layoutDirty = true;
+        renderEditorBoard();
+        toast('🔄 چیدمان پیش‌فرض برگشت');
+    });
+    $('ed-clear-board').addEventListener('click', () => {
+        if (!confirm('کل صفحه خالی شود؟ (در شروع بازی، سمت خالی خودکار پر می‌شود)')) return;
+        editorLayout = Array.from({length:6}, () => Array(3).fill(null));
+        layoutDirty = true;
+        renderEditorBoard();
+        toast('🧹 صفحه خالی شد');
+    });
+
+    // ================= مشاهده کارت =================
+    function showCardInfo(el) {
+        let ab = {}; try { ab = JSON.parse(el.dataset.abilities || '{}'); } catch(e){}
+        const rows = [];
+        Object.keys(PHASE_LABELS).forEach(ph => {
+            (ab[ph] || []).forEach(a => {
+                const meta = ACTION_META[a.action] || {};
+                const targetTxt = meta.auto ? 'خودکار 🎯' : (a.targetSide === 'ally' ? 'خودی' : 'دشمن');
+                rows.push(`<div class="info-ab"><b>${PHASE_LABELS[ph]}:</b> ${a.icon} ${esc(a.label)} — ${meta.unit || 'مقدار'}: ${a.amount} — هدف: ${targetTxt}</div>`);
+            });
+        });
+        const pv = [];
+        PASSIVE_DEFS.forEach(d => {
+            const v = el.dataset[d.key];
+            const active = d.hasAmount ? (+v > 0) : (v === '1');
+            if (active) pv.push(`${d.icon} <b>${d.label}</b>${d.hasAmount ? ' (' + v + (d.unit || '') + ')' : ''} — ${d.desc}`);
+        });
+        const st = [];
+        if (+el.dataset.shield > 0) st.push('🛡️ سپر ' + el.dataset.shield);
+        if (+el.dataset.thorns > 0) st.push('🌵 خار ' + el.dataset.thorns);
+        if (+el.dataset.poison > 0) st.push('☠️ زهر ' + el.dataset.poison);
+        if (+el.dataset.burn > 0) st.push('🔥 آتش ' + el.dataset.burn);
+        if (+el.dataset.dodge > 0) st.push('💨 جاخالی ' + el.dataset.dodge + '%');
+        if (el.dataset.taunt === '1') st.push('🎯 تحریک‌شده');
+        if (el.dataset.silenced === '1') st.push('🔇 ساکت');
+        if (el.dataset.frozen === '1') st.push('❄️ یخ‌زده');
+        if (el.dataset.soundStart || el.dataset.soundAttack || el.dataset.soundDeath) st.push('🔊 صدای شخصی');
+        $('ci-body').innerHTML = `
+            <div class="ci-head">${esc(el.dataset.name)}</div>
+            <div class="ci-stats">${TYPE_LABELS[el.dataset.type] || ''} | ⚔️ ${el.dataset.attack} | ❤️ ${el.dataset.health}/${el.dataset.maxHealth}
+            ${st.length ? '<br>' + st.join(' | ') : ''}</div>
+            ${pv.length ? '<div class="info-ab"><b>🔥 پسیوها:</b><br>' + pv.join('<br>') + '</div>' : ''}
+            ${rows.length ? rows.join('') : (pv.length ? '' : '<div class="info-ab">این کارت قابلیت ویژه‌ای ندارد</div>')}`;
+        $('card-info-overlay').style.display = 'flex';
+    }
+
+    // ================= جابجایی صفحه‌ها و دکمه‌ها =================
+    function showScreen(name) {
+        $('screen-game').style.display = name === 'game' ? 'flex' : 'none';
+        $('screen-editor').style.display = name === 'editor' ? 'block' : 'none';
+        if (name === 'game' && layoutDirty) toast('⚠️ برای اعمال تغییرات ادیتور، «شروع دوباره» را بزنید');
+    }
+    $('btn-open-editor').addEventListener('click', () => { renderEditorBoard(); renderPreview(); showScreen('editor'); });
+    $('btn-open-game').addEventListener('click', () => showScreen('game'));
+    $('btn-restart').addEventListener('click', () => { if (!busy) startGame(); else toast('⏳ صبر کنید...'); });
+    $('ed-test').addEventListener('click', () => { showScreen('game'); startGame(); });
+    $('ov-again').addEventListener('click', () => { $('overlay').style.display = 'none'; startGame(); });
+    $('ov-editor').addEventListener('click', () => { $('overlay').style.display = 'none'; renderEditorBoard(); renderPreview(); showScreen('editor'); });
+
+    $('btn-log').addEventListener('click', () => $('log-panel').classList.toggle('open'));
+    $('log-close').addEventListener('click', () => $('log-panel').classList.remove('open'));
+
+    $('btn-sound').addEventListener('click', () => {
+        soundOn = !soundOn;
+        saveLS('nabard_sound_v2', soundOn);
+        $('btn-sound').textContent = soundOn ? '🔊' : '🔇';
+        if (soundOn) SFX.play('select');
+    });
+
+    // 🎵 موسیقی
+    $('btn-music').addEventListener('click', () => {
+        updateMusicStatus();
+        $('music-overlay').style.display = 'flex';
+    });
+    function updateMusicStatus() {
+        let txt = 'وضعیت: ';
+        if (Music.customAudio && !Music.customAudio.paused) txt += '🎵 آهنگ دلخواه در حال پخش';
+        else if (Music.isPlaying()) txt += '🎵 موسیقی بازی در حال پخش';
+        else txt += '⏸ متوقف';
+        if (!Music.musicOn) txt += ' (خاموش)';
+        $('mu-status').textContent = txt;
+    }
+    $('mu-toggle').addEventListener('click', () => {
+        Music.musicOn = !Music.musicOn;
+        saveLS('nabard_music_v1', Music.musicOn);
+        if (Music.musicOn) Music.start(); else Music.stop();
+        updateMusicStatus();
+        toast(Music.musicOn ? '🎵 موسیقی روشن شد' : '🔇 موسیقی خاموش شد');
+    });
+    $('mu-vol').addEventListener('input', e => { Music.setVolume(+e.target.value); updateMusicStatus(); });
+    $('mu-file').addEventListener('change', e => {
+        const f = e.target.files[0];
+        if (!f) return;
+        Music.useCustom(f);
+        toast('🎵 آهنگ دلخواه در حال پخش است');
+        updateMusicStatus();
+    });
+    $('mu-custom-stop').addEventListener('click', () => {
+        Music.clearCustom();
+        $('mu-file').value = '';
+        updateMusicStatus();
+        toast('🔁 برگشت به موسیقی بازی');
+    });
+    $('mu-close').addEventListener('click', () => $('music-overlay').style.display = 'none');
+    $('music-overlay').addEventListener('click', e => { if (e.target === $('music-overlay')) $('music-overlay').style.display = 'none'; });
+
+    $('btn-speed').addEventListener('click', () => {
+        SPEED = SPEED === 1 ? 2 : 1;
+        $('btn-speed').textContent = SPEED === 1 ? '⏩×1' : '⏩×2';
+        toast('سرعت انیمیشن: ×' + SPEED);
+    });
+
+    $('btn-inspect').addEventListener('click', () => {
+        inspectMode = !inspectMode;
+        $('btn-inspect').classList.toggle('active', inspectMode);
+        toast(inspectMode ? 'ℹ️ حالت مشاهده: روی هر کارتی بزنید' : 'حالت مشاهده خاموش شد');
+    });
+
+    $('btn-stats').addEventListener('click', () => {
+        $('st-body').innerHTML = `
+            <div>🎮 نبردهای انجام‌شده: <b>${stats.played}</b></div>
+            <div>🥇 برد: <b>${stats.wins}</b></div>
+            <div>🥉 باخت: <b>${stats.losses}</b></div>
+            <div>📊 مجموع آسیب: <b>${stats.damage}</b></div>`;
+        $('stats-overlay').style.display = 'flex';
+    });
+    $('st-close').addEventListener('click', () => $('stats-overlay').style.display = 'none');
+    $('ci-close').addEventListener('click', () => $('card-info-overlay').style.display = 'none');
+    [ $('overlay'), $('card-info-overlay'), $('stats-overlay'), $('music-overlay') ].forEach(ov =>
+        ov.addEventListener('click', e => { if (e.target === ov) ov.style.display = 'none'; })
+    );
+
+    $('end-turn-btn').addEventListener('click', () => {
+        if (currentTurn === 'player' && !gameOver && !busy) {
+            if (performance.now() - gameStartTime < 1300) { toast('⏳ کمی صبر کنید...'); return; }
+            startEnemyTurn();
+        }
+    });
+    $('game-board').addEventListener('click', e => {
+        if (e.target.classList.contains('card-slot') || e.target.id === 'game-board') clearSelection();
+    });
+
+    // شروع خودکار موسیقی با اولین لمس (قانون مرورگرها)
+    document.addEventListener('pointerdown', function once() {
+        if (Music.musicOn) Music.start();
+        document.removeEventListener('pointerdown', once);
+    }, { once: true });
+
+    // ================= راه‌اندازی =================
+    customCards = customCards.map(cc => normalizeDef(cc, true));
+    saveLS('nabard_custom_cards_v2', customCards);
+
+    buildEditorBoard();
+    buildSwatches();
+    buildAbilityButtons();
+    bindFormInputs();
+    renderLibrary();
+    renderSetups();
+    renderPreview();
+    renderEditorBoard();
+    renderPassives();
+    fillFormFromCard();
+    $('btn-sound').textContent = soundOn ? '🔊' : '🔇';
+    $('mu-vol').value = Music.volume;
+    startGame();
+    showScreen('game');
+</script>
+</body>
+</html>

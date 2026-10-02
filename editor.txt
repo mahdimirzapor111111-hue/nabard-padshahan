@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1e1e2e">
+<title>ادیتور صفحه شروع</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    font-family: Tahoma, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #1e1e2e;
+    color: #fff;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  body {
+    display: flex;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* ===== پنل کنترل ===== */
+  #panel {
+    width: 340px;
+    flex-shrink: 0;
+    background: #2a2a3e;
+    padding: 15px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border-left: 2px solid #444;
+    padding-bottom: 30px;
+  }
+  #panel h2 {
+    font-size: 15px;
+    margin-bottom: 10px;
+    color: #ffd166;
+  }
+  #panel h3 {
+    font-size: 13px;
+    margin: 18px 0 8px;
+    color: #ff9f68;
+    border-top: 1px solid #3a3a4e;
+    padding-top: 12px;
+  }
+  #panel label {
+    display: block;
+    font-size: 13px;
+    margin: 12px 0 5px;
+    color: #ccc;
+  }
+  #panel input[type="file"],
+  #panel input[type="text"],
+  #panel input[type="number"] {
+    width: 100%;
+    font-size: 13px;
+    color: #fff;
+    background: #1e1e2e;
+    padding: 9px;
+    border-radius: 8px;
+    border: 1px solid #444;
+  }
+  #panel input[type="color"] {
+    width: 100%;
+    height: 42px;
+    background: #1e1e2e;
+    border: 1px solid #444;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 3px;
+  }
+  #panel input[type="range"] {
+    width: 100%;
+    height: 30px;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  #panel input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    background: #444;
+    border-radius: 3px;
+  }
+  #panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    background: #ffd166;
+    border-radius: 50%;
+    margin-top: -8px;
+    cursor: pointer;
+  }
+  #panel input[type="range"]::-moz-range-track {
+    height: 6px;
+    background: #444;
+    border-radius: 3px;
+  }
+  #panel input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    background: #ffd166;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  #panel button {
+    width: 100%;
+    margin-top: 10px;
+    padding: 13px;
+    background: #ffd166;
+    color: #222;
+    font-weight: bold;
+    font-size: 13px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  #panel button:hover { background: #ffb703; }
+  #panel button:active { transform: scale(0.98); }
+  #panel button.secondary { background: #444; color: #fff; }
+  #panel button.secondary:hover { background: #555; }
+  #panel button.danger { background: #d95c5c; color: #fff; }
+  #panel button.danger:hover { background: #c44848; }
+
+  .value {
+    font-size: 12px;
+    color: #ffd166;
+    float: left;
+  }
+  .hint {
+    font-size: 11px;
+    color: #888;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > * { flex: 1; }
+
+  /* ===== ناحیه پیش‌نمایش ===== */
+  #previewWrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    background: #15151f;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+  }
+  #preview {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    height: 100%;
+    max-height: 720px;
+    aspect-ratio: 9 / 16;
+    background-size: cover;
+    background-position: center;
+    background-color: #000;
+    border-radius: 14px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.6);
+    overflow: hidden;
+    border: 2px solid #444;
+    touch-action: none;
+  }
+
+  #startBtn {
+    position: absolute;
+    cursor: move;
+    user-select: none;
+    -webkit-user-select: none;
+    background: transparent;
+    border: none;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    transition: box-shadow 0.15s;
+    touch-action: none;
+    padding: 0;
+  }
+  #startBtn:active { box-shadow: 0 0 0 3px rgba(255,209,102,0.6); }
+
+  .btnDefault {
+    width: 160px;
+    height: 60px;
+    background: #ffd166;
+    color: #222;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    font-family: inherit;
+  }
+
+  /* ===== هدر موبایل ===== */
+  #mobileHeader {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 50px;
+    background: #2a2a3e;
+    border-bottom: 1px solid #444;
+    z-index: 100;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+  }
+  #mobileHeader span {
+    font-weight: bold;
+    color: #ffd166;
+    font-size: 14px;
+  }
+  #mobileHeader button {
+    padding: 8px 14px;
+    background: #ffd166;
+    color: #222;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  /* ===== مودال ویرایش تصویر ===== */
+  #editModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 1000;
+    flex-direction: column;
+    padding: 10px;
+    gap: 10px;
+  }
+  #editModal.open { display: flex; }
+
+  #editHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2a2a3e;
+    padding: 10px 15px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+  #editHeader h3 {
+    font-size: 14px;
+    color: #ffd166;
+  }
+  #editHeader button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  #modalApply { background: #4caf50; color: #fff; }
+  #modalCancel { background: #666; color: #fff; }
+
+  #editBody {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    min-height: 0;
+  }
+
+  #canvasWrap {
+    flex: 1;
+    position: relative;
+    background: #111;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+  }
+  #editCanvas {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: crosshair;
+  }
+
+  #cropBox {
+    position: absolute;
+    border: 2px dashed #ffd166;
+    background: rgba(255,209,102,0.08);
+    pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+    display: none;
+    z-index: 5;
+  }
+
+  #editTools {
+    width: 260px;
+    background: #2a2a3e;
+    border-radius: 10px;
+    padding: 12px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  #editTools h4 {
+    font-size: 13px;
+    color: #ffd166;
+    margin-bottom: 8px;
+  }
+  #editTools .tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+  #editTools .tabs button {
+    flex: 1;
+    padding: 8px;
+    font-size: 12px;
+    background: #1e1e2e;
+    color: #aaa;
+    border: 1px solid #444;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 0;
+  }
+  #editTools .tabs button.active {
+    background: #ffd166;
+    color: #222;
+    border-color: #ffd166;
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .colorRow {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 8px 0;
+  }
+  .colorRow input[type="color"] {
+    flex: 0 0 50px;
+    height: 36px;
+  }
+  .colorRow input[type="number"] {
+    flex: 1;
+  }
+  .colorRow label {
+    font-size: 12px;
+    color: #ccc;
+    margin: 0;
+    flex: 0 0 auto;
+  }
+
+  #editTools .hint {
+    font-size: 11px;
+    color: #888;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 900px) {
+    body {
+      flex-direction: column;
+      padding-top: 50px;
+    }
+    #mobileHeader { display: flex; }
+    #previewWrap {
+      flex: 1;
+      padding: 10px;
+      order: 1;
+    }
+    #preview {
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: auto;
+      width: 100%;
+      height: 100%;
+    }
+    #panel {
+      order: 2;
+      width: 100%;
+      max-height: 50vh;
+      border-left: none;
+      border-top: 2px solid #444;
+      border-radius: 16px 16px 0 0;
+      display: none;
+    }
+    #panel.open { display: block; }
+
+    /* مودال روی موبایل: عمودی */
+    #editBody {
+      flex-direction: column;
+    }
+    #editTools {
+      width: 100%;
+      max-height: 40vh;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="mobileHeader">
+  <span>🎨 ادیتور شروع</span>
+  <button id="togglePanel">⚙️ تنظیمات</button>
+</div>
+
+<div id="panel">
+  <h2>⚙️ تنظیمات</h2>
+
+  <label>🖼️ تصویر پس‌زمینه صفحه</label>
+  <input type="file" id="bgInput" accept="image/*">
+  <button class="secondary" id="editBgBtn" style="display:none;">✂️ ویرایش پس‌زمینه</button>
+
+  <label>🔘 تصویر دکمه شروع</label>
+  <input type="file" id="btnInput" accept="image/*">
+  <button class="secondary" id="editBtnBtn" style="display:none;">✂️ ویرایش تصویر دکمه</button>
+
+  <label>📝 متن دکمه</label>
+  <input type="text" id="btnText" value="شروع">
+
+  <label>عرض دکمه <span class="value" id="wVal">160px</span></label>
+  <input type="range" id="btnW" min="40" max="400" value="160">
+
+  <label>ارتفاع دکمه <span class="value" id="hVal">60px</span></label>
+  <input type="range" id="btnH" min="20" max="200" value="60">
+
+  <label>موقعیت افقی <span class="value" id="xVal">50%</span></label>
+  <input type="range" id="btnX" min="0" max="100" value="50">
+
+  <label>موقعیت عمودی <span class="value" id="yVal">50%</span></label>
+  <input type="range" id="btnY" min="0" max="100" value="50">
+
+  <div class="hint">💡 دکمه را با انگشت/ماوس داخل پیش‌نمایش بکشید.</div>
+
+  <button id="downloadBtn">💾 دانلود فایل HTML</button>
+  <button class="secondary" id="resetBtn">♻️ بازنشانی</button>
+  <button class="secondary" id="closePanel" style="display:none;">✖️ بستن</button>
+</div>
+
+<div id="previewWrap">
+  <div id="preview">
+    <button id="startBtn" class="btnDefault">
+      <span id="btnLabel">شروع</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== مودال ویرایش تصویر ===== -->
+<div id="editModal">
+  <div id="editHeader">
+    <h3 id="editTitle">✂️ ویرایش تصویر</h3>
+    <div style="display:flex;gap:8px;">
+      <button id="modalCancel">لغو</button>
+      <button id="modalApply">✔️ اعمال</button>
+    </div>
+  </div>
+
+  <div id="editBody">
+    <div id="canvasWrap">
+      <canvas id="editCanvas"></canvas>
+      <div id="cropBox"></div>
+    </div>
+
+    <div id="editTools">
+      <div class="tabs">
+        <button data-tab="remove" class="active">🎨 حذف پس‌زمینه</button>
+        <button data-tab="crop">✂️ برش</button>
+      </div>
+
+      <!-- تب حذف رنگ -->
+      <div class="tab-content active" data-content="remove">
+        <h4>انتخاب رنگ برای حذف</h4>
+        <div class="colorRow">
+          <input type="color" id="removeColor" value="#ffffff">
+          <button id="pickColorBtn" class="secondary" style="margin:0;padding:10px;font-size:12px;">🔍 انتخاب از تصویر</button>
+        </div>
+
+        <label>میزان تحمل (Tolerance) <span class="value" id="tolVal">30</span></label>
+        <input type="range" id="tolerance" min="0" max="255" value="30">
+
+        <label>نرمی لبه‌ها (Feather) <span class="value" id="featherVal">2</span></label>
+        <input type="range" id="feather" min="0" max="20" value="2">
+
+        <div class="hint">💡 روی «🔍 انتخاب از تصویر» بزن و بعد روی قسمتی از عکس که می‌خوای حذف شه کلیک کن.</div>
+
+        <button id="applyRemove" style="background:#4caf50;color:#fff;">🎨 حذف رنگ انتخاب‌شده</button>
+        <button id="resetEdit" class="secondary">↩️ بازگردانی تصویر اصلی</button>
+      </div>
+
+      <!-- تب برش -->
+      <div class="tab-content" data-content="crop">
+        <h4>انتخاب ناحیه برش</h4>
+        <div class="hint">💡 انگشت/ماوس را روی تصویر بکشید تا ناحیه‌ی برش مشخص شود.</div>
+
+        <div class="row" style="margin-top:10px;">
+          <button id="cropReset" class="secondary" style="margin:0;">🔲 کل تصویر</button>
+          <button id="applyCrop" style="margin:0;background:#4caf50;color:#fff;">✂️ برش بزن</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const preview   = document.getElementById('preview');
+  const startBtn  = document.getElementById('startBtn');
+  const btnLabel  = document.getElementById('btnLabel');
+  const bgInput   = document.getElementById('bgInput');
+  const btnInput  = document.getElementById('btnInput');
+  const btnText   = document.getElementById('btnText');
+  const btnW      = document.getElementById('btnW');
+  const btnH      = document.getElementById('btnH');
+  const btnX      = document.getElementById('btnX');
+  const btnY      = document.getElementById('btnY');
+  const wVal = document.getElementById('wVal');
+  const hVal = document.getElementById('hVal');
+  const xVal = document.getElementById('xVal');
+  const yVal = document.getElementById('yVal');
+  const panel  = document.getElementById('panel');
+  const togglePanelBtn = document.getElementById('togglePanel');
+  const closePanelBtn  = document.getElementById('closePanel');
+  const editBgBtn = document.getElementById('editBgBtn');
+  const editBtnBtn = document.getElementById('editBtnBtn');
+
+  let bgData = '';
+  let btnData = '';
+  let dragging = false;
+
+  const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
+
+  function updateCloseBtn() {
+    closePanelBtn.style.display = isMobile() ? 'block' : 'none';
+  }
+  updateCloseBtn();
+  window.addEventListener('resize', updateCloseBtn);
+
+  togglePanelBtn.addEventListener('click', () => {
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) {
+      setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+    }
+  });
+  closePanelBtn.addEventListener('click', () => panel.classList.remove('open'));
+
+  // ====== آپلود تصاویر ======
+  bgInput.addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      bgData = ev.target.result;
+      preview.style.backgroundImage = `url(${bgData})`;
+      editBgBtn.style.display = 'block';
+    };
+    r.readAsDataURL(f);
+  });
+
+  btnInput.addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      btnData = ev.target.result;
+      startBtn.style.background = `url(${btnData}) center/100% 100% no-repeat`;
+      startBtn.classList.remove('btnDefault');
+      btnLabel.style.display = 'none';
+      editBtnBtn.style.display = 'block';
+    };
+    r.readAsDataURL(f);
+  });
+
+  btnText.addEventListener('input', () => {
+    if (!btnData) btnLabel.textContent = btnText.value || 'شروع';
+  });
+
+  // ====== ابعاد و موقعیت دکمه ======
+  function updateSize() {
+    startBtn.style.width = btnW.value + 'px';
+    startBtn.style.height = btnH.value + 'px';
+    wVal.textContent = btnW.value + 'px';
+    hVal.textContent = btnH.value + 'px';
+  }
+  btnW.addEventListener('input', updateSize);
+  btnH.addEventListener('input', updateSize);
+
+  function updatePos() {
+    startBtn.style.left = btnX.value + '%';
+    startBtn.style.top  = btnY.value + '%';
+    xVal.textContent = btnX.value + '%';
+    yVal.textContent = btnY.value + '%';
+  }
+  btnX.addEventListener('input', updatePos);
+  btnY.addEventListener('input', updatePos);
+
+  // ====== درگ دکمه ======
+  function getPoint(e) {
+    const rect = preview.getBoundingClientRect();
+    let clientX, clientY;
+    if (e.touches && e.touches.length) {
+      clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length) {
+      clientX = e.changedTouches[0].clientX; clientY = e.changedTouches[0].clientY;
+    } else {
+      clientX = e.clientX; clientY = e.clientY;
+    }
+    let x = clientX - rect.left;
+    let y = clientY - rect.top;
+    x = Math.max(0, Math.min(rect.width,  x));
+    y = Math.max(0, Math.min(rect.height, y));
+    return { xPct: (x / rect.width) * 100, yPct: (y / rect.height) * 100 };
+  }
+  function applyDragPoint(e) {
+    const p = getPoint(e);
+    btnX.value = Math.round(p.xPct);
+    btnY.value = Math.round(p.yPct);
+    updatePos();
+  }
+  function startDrag(e) {
+    dragging = true;
+    e.preventDefault(); e.stopPropagation();
+  }
+  function endDrag() { dragging = false; }
+
+  startBtn.addEventListener('mousedown', startDrag);
+  document.addEventListener('mousemove', e => { if (dragging) applyDragPoint(e); });
+  document.addEventListener('mouseup', endDrag);
+
+  startBtn.addEventListener('touchstart', startDrag, { passive: false });
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    e.preventDefault();
+    applyDragPoint(e);
+  }, { passive: false });
+  document.addEventListener('touchend', endDrag);
+  document.addEventListener('touchcancel', endDrag);
+
+  preview.addEventListener('gesturestart', e => e.preventDefault());
+
+  // ==================================================================
+  // ==================== مودال ویرایش تصویر ==========================
+  // ==================================================================
+  const editModal   = document.getElementById('editModal');
+  const editTitle   = document.getElementById('editTitle');
+  const editCanvas  = document.getElementById('editCanvas');
+  const ctx         = editCanvas.getContext('2d');
+  const canvasWrap  = document.getElementById('canvasWrap');
+  const cropBox     = document.getElementById('cropBox');
+  const removeColor = document.getElementById('removeColor');
+  const tolerance   = document.getElementById('tolerance');
+  const tolVal      = document.getElementById('tolVal');
+  const feather     = document.getElementById('feather');
+  const featherVal  = document.getElementById('featherVal');
+  const pickColorBtn= document.getElementById('pickColorBtn');
+  const applyRemove = document.getElementById('applyRemove');
+  const resetEdit   = document.getElementById('resetEdit');
+  const applyCrop   = document.getElementById('applyCrop');
+  const cropReset   = document.getElementById('cropReset');
+  const modalApply  = document.getElementById('modalApply');
+  const modalCancel = document.getElementById('modalCancel');
+
+  // state مودال
+  let editingTarget = null;      // 'bg' | 'btn'
+  let originalImage = null;      // Image اصلی (برای بازگردانی)
+  let currentCanvas = null;      // canvas کاری
+  let baseImageData = null;      // داده‌ی اولیه برای بازگردانی سریع
+  let pickingColor  = false;     // حالت انتخاب رنگ از تصویر
+  let cropStart     = null;      // شروع کشیدن ناحیه برش
+  let cropRect      = null;      // { x, y, w, h } نسبت به canvas
+  let displayScale  = 1;         // نسبت canvas به نمایش
+
+  tolerance.addEventListener('input', () => tolVal.textContent = tolerance.value);
+  feather.addEventListener('input', () => featherVal.textContent = feather.value);
+
+  // تب‌ها
+  document.querySelectorAll('#editTools .tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('#editTools .tabs button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelector(`.tab-content[data-content="${tab}"]`).classList.add('active');
+
+      if (tab === 'crop') {
+        canvasWrap.style.cursor = 'crosshair';
+      } else {
+        canvasWrap.style.cursor = 'default';
+        cropBox.style.display = 'none';
+        cropRect = null;
+      }
+    });
+  });
+
+  // باز کردن مودال
+  function openEditor(target) {
+    editingTarget = target;
+    editTitle.textContent = target === 'bg' ? '✂️ ویرایش پس‌زمینه' : '✂️ ویرایش تصویر دکمه';
+    const src = target === 'bg' ? bgData : btnData;
+    if (!src) return;
+
+    const img = new Image();
+    img.onload = () => {
+      originalImage = img;
+      // canvas با اندازه‌ی تصویر اصلی
+      editCanvas.width  = img.naturalWidth;
+      editCanvas.height = img.naturalHeight;
+      ctx.clearRect(0, 0, editCanvas.width, editCanvas.height);
+      ctx.drawImage(img, 0, 0);
+      baseImageData = ctx.getImageData(0, 0, editCanvas.width, editCanvas.height);
+
+      // نمایش canvas
+      fitCanvasDisplay();
+      cropBox.style.display = 'none';
+      cropRect = null;
+
+      // ریست UI
+      resetToolStates();
+
+      editModal.classList.add('open');
+    };
+    img.src = src;
+  }
+
+  // تنظیم اندازه‌ی نمایش canvas
+  function fitCanvasDisplay() {
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    const cw = editCanvas.width;
+    const ch = editCanvas.height;
+    const scaleX = (wrapRect.width  - 20) / cw;
+    const scaleY = (wrapRect.height - 20) / ch;
+    const s = Math.min(scaleX, scaleY, 1);
+    editCanvas.style.width  = (cw * s) + 'px';
+    editCanvas.style.height = (ch * s) + 'px';
+    displayScale = s;
+  }
+  window.addEventListener('resize', () => {
+    if (editModal.classList.contains('open')) {
+      fitCanvasDisplay();
+      redrawCropBox();
+    }
+  });
+
+  function resetToolStates() {
+    pickColorBtn.textContent = '🔍 انتخاب از تصویر';
+    pickingColor = false;
+    removeColor.value = '#ffffff';
+  }
+
+  // دکمه‌های باز کردن ویرایشگر
+  editBgBtn.addEventListener('click', () => openEditor('bg'));
+  editBtnBtn.addEventListener('click', () => openEditor('btn'));
+
+  // ====== انتخاب رنگ از روی تصویر ======
+  pickColorBtn.addEventListener('click', () => {
+    pickingColor = !pickingColor;
+    pickColorBtn.textContent = pickingColor ? '❌ لغو انتخاب' : '🔍 انتخاب از تصویر';
+    canvasWrap.style.cursor = pickingColor ? 'copy' : 'default';
+  });
+
+  function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+  function hexToRgb(hex) {
+    const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+    return m ? { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) } : { r:0,g:0,b:0 };
+  }
+
+  function canvasCoordsFromEvent(e) {
+    const rect = editCanvas.getBoundingClientRect();
+    let clientX, clientY;
+    if (e.touches && e.touches.length) {
+      clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length) {
+      clientX = e.changedTouches[0].clientX; clientY = e.changedTouches[0].clientY;
+    } else {
+      clientX = e.clientX; clientY = e.clientY;
+    }
+    const x = (clientX - rect.left) * (editCanvas.width  / rect.width);
+    const y = (clientY - rect.top)  * (editCanvas.height / rect.height);
+    return { x: Math.max(0, Math.min(editCanvas.width  - 1, Math.round(x))),
+             y: Math.max(0, Math.min(editCanvas.height - 1, Math.round(y))) };
+  }
+
+  // ====== حذف رنگ (Flood-fill style flood-fill یا global) ======
+  // از روش «حذف تمام پیکسل‌های مشابه در کل تصویر» با آستانه استفاده می‌کنیم
+  function removeColorFromImage(targetRgb, tol, featherAmount) {
+    const imgData = ctx.getImageData(0, 0, editCanvas.width, editCanvas.height);
+    const data = imgData.data;
+    const len = data.length;
+    const { r: tr, g: tg, b: tb } = targetRgb;
+    const tolSq = tol * tol * 3; // برای سرعت
+
+    for (let i = 0; i < len; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2];
+      const dr = r - tr, dg = g - tg, db = b - tb;
+      const distSq = dr*dr + dg*dg + db*db;
+
+      if (distSq <= tolSq) {
+        // شفاف کامل
+        data[i+3] = 0;
+      } else if (featherAmount > 0) {
+        // نرمی لبه‌ها: پیکسل‌های نزدیک به آستانه، نیمه شفاف
+        const featherThreshold = (tol + featherAmount) * (tol + featherAmount) * 3;
+        if (distSq <= featherThreshold) {
+          const t = Math.sqrt(distSq);
+          const a = 1 - (t - tol) / featherAmount;
+          data[i+3] = Math.max(0, Math.min(255, data[i+3] * a));
+        }
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  applyRemove.addEventListener('click', () => {
+    const rgb = hexToRgb(removeColor.value);
+    removeColorFromImage(rgb, parseInt(tolerance.value), parseInt(feather.value));
+  });
+
+  resetEdit.addEventListener('click', () => {
+    if (!baseImageData) return;
+    ctx.putImageData(baseImageData, 0, 0);
+  });
+
+  // ====== کلیک روی canvas ======
+  let canvasPointerActive = false;
+
+  function onCanvasDown(e) {
+    // اگر حالت انتخاب رنگ فعال است
+    if (pickingColor) {
+      const p = canvasCoordsFromEvent(e);
+      const px = ctx.getImageData(p.x, p.y, 1, 1).data;
+      removeColor.value = rgbToHex(px[0], px[1], px[2]);
+      pickingColor = false;
+      pickColorBtn.textContent = '🔍 انتخاب از تصویر';
+      canvasWrap.style.cursor = 'default';
+      e.preventDefault();
+      return;
+    }
+
+    // اگر تب برش فعال است
+    const cropTabActive = document.querySelector('#editTools .tabs button.active')?.dataset.tab === 'crop';
+    if (!cropTabActive) return;
+
+    const p = canvasCoordsFromEvent(e);
+    cropStart = p;
+    cropRect = { x: p.x, y: p.y, w: 0, h: 0 };
+    redrawCropBox();
+    canvasPointerActive = true;
+    e.preventDefault();
+  }
+
+  function onCanvasMove(e) {
+    if (!canvasPointerActive || !cropStart) return;
+    const p = canvasCoordsFromEvent(e);
+    const x = Math.min(cropStart.x, p.x);
+    const y = Math.min(cropStart.y, p.y);
+    const w = Math.abs(p.x - cropStart.x);
+    const h = Math.abs(p.y - cropStart.y);
+    cropRect = { x, y, w, h };
+    redrawCropBox();
+    e.preventDefault();
+  }
+
+  function onCanvasUp() {
+    canvasPointerActive = false;
+  }
+
+  function redrawCropBox() {
+    if (!cropRect || cropRect.w < 2 || cropRect.h < 2) {
+      cropBox.style.display = 'none';
+      return;
+    }
+    const canvasRect = editCanvas.getBoundingClientRect();
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    const offsetX = canvasRect.left - wrapRect.left;
+    const offsetY = canvasRect.top  - wrapRect.top;
+    const scaleX = canvasRect.width  / editCanvas.width;
+    const scaleY = canvasRect.height / editCanvas.height;
+
+    cropBox.style.display = 'block';
+    cropBox.style.left   = (offsetX + cropRect.x * scaleX) + 'px';
+    cropBox.style.top    = (offsetY + cropRect.y * scaleY) + 'px';
+    cropBox.style.width  = (cropRect.w * scaleX) + 'px';
+    cropBox.style.height = (cropRect.h * scaleY) + 'px';
+  }
+
+  editCanvas.addEventListener('mousedown', onCanvasDown);
+  document.addEventListener('mousemove', onCanvasMove);
+  document.addEventListener('mouseup', onCanvasUp);
+
+  editCanvas.addEventListener('touchstart', onCanvasDown, { passive: false });
+  document.addEventListener('touchmove', onCanvasMove, { passive: false });
+  document.addEventListener('touchend', onCanvasUp);
+  document.addEventListener('touchcancel', onCanvasUp);
+
+  // ====== برش ======
+  applyCrop.addEventListener('click', () => {
+    if (!cropRect || cropRect.w < 5 || cropRect.h < 5) {
+      alert('لطفاً ابتدا ناحیه‌ی برش را با کشیدن روی تصویر انتخاب کنید.');
+      return;
+    }
+    const w = Math.round(cropRect.w);
+    const h = Math.round(cropRect.h);
+    const x = Math.round(cropRect.x);
+    const y = Math.round(cropRect.y);
+
+    // داده‌ی ناحیه‌ی برش
+    const data = ctx.getImageData(x, y, w, h);
+    // resize canvas
+    editCanvas.width = w;
+    editCanvas.height = h;
+    ctx.putImageData(data, 0, 0);
+
+    // ریست حالت برش
+    cropRect = null;
+    cropBox.style.display = 'none';
+
+    // آپدیت baseImageData تا «بازگردانی» به این حالت برگرده
+    baseImageData = ctx.getImageData(0, 0, editCanvas.width, editCanvas.height);
+
+    fitCanvasDisplay();
+  });
+
+  cropReset.addEventListener('click', () => {
+    if (!originalImage) return;
+    editCanvas.width  = originalImage.naturalWidth;
+    editCanvas.height = originalImage.naturalHeight;
+    ctx.clearRect(0, 0, editCanvas.width, editCanvas.height);
+    ctx.drawImage(originalImage, 0, 0);
+    baseImageData = ctx.getImageData(0, 0, editCanvas.width, editCanvas.height);
+    cropRect = null;
+    cropBox.style.display = 'none';
+    fitCanvasDisplay();
+  });
+
+  // ====== اعمال / لغو مودال ======
+  modalCancel.addEventListener('click', () => {
+    editModal.classList.remove('open');
+    cropBox.style.display = 'none';
+    cropRect = null;
+    pickingColor = false;
+    resetToolStates();
+  });
+
+  modalApply.addEventListener('click', () => {
+    const dataUrl = editCanvas.toDataURL('image/png');
+    if (editingTarget === 'bg') {
+      bgData = dataUrl;
+      preview.style.backgroundImage = `url(${bgData})`;
+    } else {
+      btnData = dataUrl;
+      startBtn.style.background = `url(${btnData}) center/100% 100% no-repeat`;
+      startBtn.classList.remove('btnDefault');
+      btnLabel.style.display = 'none';
+    }
+    editModal.classList.remove('open');
+    cropBox.style.display = 'none';
+    cropRect = null;
+    pickingColor = false;
+  });
+
+  // ==================================================================
+  // ==================== دانلود فایل HTML ============================
+  // ==================================================================
+  document.getElementById('downloadBtn').addEventListener('click', () => {
+    const bgStyle = bgData
+      ? `background-image:url('${bgData}');background-size:cover;background-position:center;background-color:#000;`
+      : 'background:#000;';
+
+    const btnStyleImg = btnData
+      ? `background:url('${btnData}') center/100% 100% no-repeat;`
+      : `background:#ffd166;color:#222;font-size:20px;font-weight:bold;display:flex;align-items:center;justify-content:center;font-family:inherit;`;
+
+    const btnContent = btnData ? '' : (btnText.value || 'شروع');
+
+    const html = `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>صفحه شروع</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; overflow:hidden; }
+  body {
+    display:flex; align-items:center; justify-content:center;
+    ${bgStyle}
+  }
+  #startBtn {
+    position:absolute;
+    left:${btnX.value}%;
+    top:${btnY.value}%;
+    width:${btnW.value}px;
+    height:${btnH.value}px;
+    cursor:pointer;
+    border:none;
+    border-radius:12px;
+    transform:translate(-50%,-50%);
+    transition:transform 0.15s;
+    font-family:inherit;
+    ${btnStyleImg}
+  }
+  #startBtn:active { transform:translate(-50%,-50%) scale(0.95); }
+</style>
+</head>
+<body>
+  <button id="startBtn" onclick="alert('شروع!')">${btnContent}</button>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = 'start-page.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  // ====== بازنشانی ======
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    bgData = ''; btnData = '';
+    preview.style.backgroundImage = '';
+    startBtn.style.backgroundImage = '';
+    startBtn.style.background = '';
+    startBtn.className = 'btnDefault';
+    startBtn.style.width = '160px';
+    startBtn.style.height = '60px';
+    startBtn.style.left = '50%';
+    startBtn.style.top  = '50%';
+    btnLabel.style.display = '';
+    btnLabel.textContent = 'شروع';
+    btnText.value = 'شروع';
+    btnW.value = 160; btnH.value = 60; btnX.value = 50; btnY.value = 50;
+    wVal.textContent = '160px'; hVal.textContent = '60px';
+    xVal.textContent = '50%';  yVal.textContent = '50%';
+    bgInput.value = ''; btnInput.value = '';
+    editBgBtn.style.display = 'none';
+    editBtnBtn.style.display = 'none';
+  });
+
+  updateSize();
+  updatePos();
+
+})();
+</script>
+</body>
+</html>
